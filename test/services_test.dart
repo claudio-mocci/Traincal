@@ -4,12 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:traincal/data/local_store.dart';
-import 'package:traincal/data/seed_foods.dart';
 import 'package:traincal/models/food.dart';
 import 'package:traincal/models/recipe.dart';
 import 'package:traincal/models/workout.dart';
 import 'package:traincal/services/claude_client.dart';
 import 'package:traincal/services/intervals_client.dart';
+
+import 'test_db.dart';
 
 void main() {
   group('IntervalsClient', () {
@@ -173,7 +174,7 @@ void main() {
   });
 
   test('ClaudeClient.parseRecipes riconcilia gli alimenti', () {
-    final foods = {for (final f in seedFoods) f.id: f};
+    final foods = {for (final f in testDb.foods) f.id: f};
     final g = ClaudeClient.parseRecipes(
       {
         'recipes': [

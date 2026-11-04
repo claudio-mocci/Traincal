@@ -198,26 +198,97 @@ class _MenuTab extends StatelessWidget {
 
   Future<void> _swap(BuildContext context, Recipe current) async {
     final s = context.read<AppState>();
-    final options = s.recipes
-        .where((r) => r.type == current.type && r.id != current.id)
-        .toList();
     final picked = await showDialog<Recipe>(
       context: context,
-      builder: (c) => SimpleDialog(
-        title: Text('Sostituisci "${current.name}"'),
-        children: [
-          for (final r in options)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(c, r),
-              child: ListTile(
-                title: Text(r.name),
-                subtitle: Text(r.macrosPerServing(s.foods).toString()),
-              ),
-            ),
-        ],
-      ),
+      builder: (_) => _SwapDialog(current: current, days: s.weekDays),
     );
     if (picked != null) s.swapRecipeInPlan(current.id, picked.id);
+  }
+}
+
+/// Scelta della ricetta sostitutiva: stesso tipo di pasto, prima quelle di
+/// stagione nella settimana, con ricerca per nome.
+class _SwapDialog extends StatefulWidget {
+  final Recipe current;
+  final List<DateTime> days;
+  const _SwapDialog({required this.current, required this.days});
+
+  @override
+  State<_SwapDialog> createState() => _SwapDialogState();
+}
+
+class _SwapDialogState extends State<_SwapDialog> {
+  String _query = '';
+  late final List<Recipe> _options;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = context.read<AppState>();
+    final planner = s.planner;
+    final penalty = {
+      for (final r in s.recipes)
+        if (r.type == widget.current.type && r.id != widget.current.id)
+          r: (planner.seasonPenalty(r, widget.days) * 10).round(),
+    };
+    _options = penalty.keys.toList()
+      ..sort((a, b) {
+        final c = penalty[a]!.compareTo(penalty[b]!);
+        return c != 0 ? c : a.name.compareTo(b.name);
+      });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final q = _query.toLowerCase();
+    final list = _options
+        .where((r) => r.name.toLowerCase().contains(q))
+        .toList();
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 640),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Sostituisci "${widget.current.name}"',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                autofocus: true,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Cerca ricetta',
+                  isDense: true,
+                ),
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: list.length,
+                itemBuilder: (c, i) {
+                  final r = list[i];
+                  return ListTile(
+                    leading: r.isInSeason(s.foods, widget.days)
+                        ? const Icon(Icons.eco_outlined)
+                        : const SizedBox(width: 24),
+                    title: Text(r.name),
+                    subtitle: Text(r.macrosPerServing(s.foods).toString()),
+                    onTap: () => Navigator.pop(c, r),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

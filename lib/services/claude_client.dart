@@ -132,8 +132,9 @@ class ClaudeClient {
 
   Future<GeneratedRecipes> generateRecipes(
     RecipeRequest req,
-    Map<String, Food> foods,
-  ) async {
+    Map<String, Food> foods, {
+    DateTime? when,
+  }) async {
     final foodList = foods.values
         .map(
           (f) =>
@@ -146,6 +147,17 @@ class ClaudeClient {
         : '\nMacro target per porzione (tolleranza ±10%): ${t.kcal.round()} kcal, '
               'proteine ${t.protein.round()} g, carboidrati ${t.carbs.round()} g, '
               'grassi ${t.fat.round()} g.';
+
+    // Frutta e verdura di stagione nel periodo in cui si cucinerà.
+    final day = when ?? DateTime.now();
+    final seasonal = foods.values
+        .where((f) => f.isSeasonal && f.inSeason(day))
+        .map((f) => f.name)
+        .join(', ');
+    final season = seasonal.isEmpty
+        ? ''
+        : '\nPrivilegia gli ingredienti di stagione in questo periodo: '
+              '$seasonal. Evita frutta e verdura fuori stagione.';
 
     final system =
         'Sei un nutrizionista sportivo e cuoco. Crei ricette semplici, '
@@ -163,7 +175,7 @@ class ClaudeClient {
         '$foodList\n\n'
         'Genera ${req.count} ricett${req.count == 1 ? 'a' : 'e'} di tipo '
         '"${req.type.label}". Richiesta: ${req.prompt.isEmpty ? 'nessuna preferenza' : req.prompt}.'
-        '$target';
+        '$target$season';
 
     final body = {
       'model': model,

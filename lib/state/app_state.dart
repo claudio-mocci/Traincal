@@ -6,10 +6,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../data/food_db.dart';
 import '../data/local_store.dart';
 import '../data/secrets.dart';
-import '../data/seed_foods.dart';
-import '../data/seed_recipes.dart';
 import '../models/food.dart';
 import '../models/meal_plan.dart';
 import '../models/nutrition_plan.dart';
@@ -85,8 +84,10 @@ class AppState extends ChangeNotifier {
 
   UserProfile profile = const UserProfile();
   List<NutritionPlan> plans = [];
+  FoodDb _db = const FoodDb([], []);
   Map<String, Food> foods = {};
-  List<Recipe> recipes = [];
+  List<Recipe> _recipes = [];
+  Map<String, Recipe> _recipesById = {};
   MealPrepPrefs mealPrepPrefs = const MealPrepPrefs();
   final Map<String, Workout> _workouts = {};
   final Map<String, WeekMealPlan> _mealPlans = {};
@@ -96,7 +97,8 @@ class AppState extends ChangeNotifier {
 
   // --- Inizializzazione ---------------------------------------------------
 
-  Future<void> init({LocalStore? testStore}) async {
+  Future<void> init({LocalStore? testStore, FoodDb? db}) async {
+    _db = db ?? await FoodDb.load();
     if (testStore != null) {
       store = testStore;
     } else {
@@ -138,7 +140,7 @@ class AppState extends ChangeNotifier {
     plans = store.all(Collections.plans).map(NutritionPlan.fromJson).toList()
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
 
-    foods = {for (final f in seedFoods) f.id: f};
+    foods = {for (final f in _db.foods) f.id: f};
     for (final j in store.all(Collections.foods)) {
       final f = Food.fromJson(j);
       foods[f.id] = f;
@@ -147,7 +149,7 @@ class AppState extends ChangeNotifier {
     final custom = store.all(Collections.recipes).map(Recipe.fromJson).toList();
     final customIds = custom.map((r) => r.id).toSet();
     recipes = [
-      ...seedRecipes.where((r) => !customIds.contains(r.id)),
+      ..._db.recipes.where((r) => !customIds.contains(r.id)),
       ...custom,
     ]..sort((a, b) => a.name.compareTo(b.name));
 
@@ -182,7 +184,14 @@ class AppState extends ChangeNotifier {
 
   NutritionPlan? get activePlan => plans.where((p) => p.active).firstOrNull;
 
-  Map<String, Recipe> get recipesById => {for (final r in recipes) r.id: r};
+  List<Recipe> get recipes => _recipes;
+
+  set recipes(List<Recipe> v) {
+    _recipes = v;
+    _recipesById = {for (final r in v) r.id: r};
+  }
+
+  Map<String, Recipe> get recipesById => _recipesById;
 
   List<DateTime> get weekDays =>
       List.generate(7, (i) => selectedWeek.add(Duration(days: i)));
@@ -484,7 +493,11 @@ class AppState extends ChangeNotifier {
       model: secrets[Secrets.anthropicModel],
     );
     try {
-      return await client.generateRecipes(req, foods);
+      return await client.generateRecipes(
+        req,
+        foods,
+        when: selectedWeek.add(const Duration(days: 3)),
+      );
     } finally {
       client.close();
     }

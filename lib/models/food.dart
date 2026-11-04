@@ -76,6 +76,9 @@ class Food {
   /// Confezione tipica, per arrotondare la lista della spesa.
   final double? packageGrams;
 
+  /// Mesi di stagione (1-12); vuoto se disponibile tutto l'anno.
+  final List<int> seasonMonths;
+
   final bool builtin;
 
   const Food({
@@ -86,10 +89,16 @@ class Food {
     this.unitGrams,
     this.unitName,
     this.packageGrams,
+    this.seasonMonths = const [],
     this.builtin = false,
   });
 
   Macros forGrams(double g) => per100g.scale(g / 100);
+
+  bool get isSeasonal => seasonMonths.isNotEmpty;
+
+  bool inSeason(DateTime d) =>
+      seasonMonths.isEmpty || seasonMonths.contains(d.month);
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -99,9 +108,10 @@ class Food {
     'unitGrams': unitGrams,
     'unitName': unitName,
     'packageGrams': packageGrams,
+    'seasonMonths': seasonMonths,
   };
 
-  factory Food.fromJson(Map<String, dynamic> j) => Food(
+  factory Food.fromJson(Map<String, dynamic> j, {bool builtin = false}) => Food(
     id: j['id'] as String,
     name: j['name'] as String,
     category:
@@ -110,5 +120,9 @@ class Food {
     unitGrams: (j['unitGrams'] as num?)?.toDouble(),
     unitName: j['unitName'] as String?,
     packageGrams: (j['packageGrams'] as num?)?.toDouble(),
+    seasonMonths: ((j['seasonMonths'] as List?) ?? const [])
+        .map((e) => (e as num).toInt())
+        .toList(),
+    builtin: builtin,
   );
 }

@@ -14,12 +14,17 @@ class MealPlanOptions {
   final Set<String> excludedRecipeIds;
   final int seed;
 
+  /// Peso della stagionalità nella scelta delle ricette: 0 la ignora, 0.6
+  /// rende rare le ricette con ingredienti fuori stagione.
+  final double seasonWeight;
+
   const MealPlanOptions({
     this.prepSessions = 2,
     this.breakfastVariety = 2,
     this.snackVariety = 2,
     this.excludedRecipeIds = const {},
     this.seed = 0,
+    this.seasonWeight = 0.6,
   });
 }
 
@@ -36,6 +41,22 @@ class MealPlanner {
   final List<Recipe> recipes;
 
   MealPlanner({required this.foods, required this.recipes});
+
+  late final Map<String, Recipe> _byId = {for (final r in recipes) r.id: r};
+  final Map<String, Macros> _macros = {};
+
+  Macros _perServing(Recipe r) =>
+      _macros.putIfAbsent(r.id, () => r.macrosPerServing(foods));
+
+  /// Quota (0-1) di ingredienti stagionali fuori stagione nei giorni
+  /// indicati, meno un piccolo bonus (fino a 0.15) per le ricette che usano
+  /// prodotti di stagione.
+  double seasonPenalty(Recipe r, List<DateTime> days) {
+    final g = r.seasonGrams(foods, days);
+    final seasonal = g.inSeason + g.outOfSeason;
+    if (seasonal == 0) return 0;
+    return g.outOfSeason / seasonal - 0.15 * min(1, g.inSeason / 200);
+  }
 
   static Map<MealSlot, double> slotShares(int mealsPerDay) =>
       switch (mealsPerDay) {
@@ -85,7 +106,7 @@ class MealPlanner {
     final shares = slotShares(mealsPerDay);
     final available = recipes
         .where((r) => !options.excludedRecipeIds.contains(r.id))
-        .where((r) => r.macrosPerServing(foods).kcal > 50)
+        .where((r) => _perServing(r).kcal > 50)
         .toList();
 
     // Ripartizione media dei macro della settimana: guida la scelta delle
@@ -95,24 +116,35 @@ class MealPlanner {
         .fold(Macros.zero, (a, b) => a + b)
         .scale(1 / max(1, days.length));
 
-    double fitScore(Recipe r) {
-      final m = r.macrosPerServing(foods);
+    final dayDates = days.map((d) => d.date).toList();
+
+    // Vicinanza al profilo di macro della settimana, stagionalità degli
+    // ingredienti nei giorni in cui la ricetta verrà mangiata e un po' di
+    // casualità per variare.
+    double fitScore(Recipe r, List<DateTime> when) {
+      final m = _perServing(r);
       double frac(double g, double kcalPerG, double total) =>
           total == 0 ? 0 : g * kcalPerG / total;
       final dp = frac(m.protein, 4, m.kcal) - frac(avg.protein, 4, avg.kcal);
       final dc = frac(m.carbs, 4, m.kcal) - frac(avg.carbs, 4, avg.kcal);
-      return dp.abs() + dc.abs() + rnd.nextDouble() * 0.12;
+      return dp.abs() +
+          dc.abs() +
+          options.seasonWeight * seasonPenalty(r, when) +
+          rnd.nextDouble() * 0.12;
     }
 
     List<Recipe> pick(
       MealType type,
       int count, {
+      required List<DateTime> when,
       Set<String> avoidProteins = const {},
       Set<String> avoidIds = const {},
       int minFridgeDays = 0,
     }) {
       final candidates = available.where((r) => r.type == type).toList();
-      final scored = candidates.map((r) => (r: r, s: fitScore(r))).toList()
+      final scored = candidates
+          .map((r) => (r: r, s: fitScore(r, when)))
+          .toList()
         ..sort((a, b) => a.s.compareTo(b.s));
       final chosen = <Recipe>[];
       final usedProteins = {...avoidProteins};
@@ -135,7 +167,6 @@ class MealPlanner {
       return chosen;
     }
 
-    final dayDates = days.map((d) => d.date).toList();
     final assignments = List.generate(days.length, (_) => <MealSlot, Recipe>{});
     final prepSessions = <PrepSession>[];
 
@@ -149,6 +180,7 @@ class MealPlanner {
       final chosen = pick(
         MealType.main,
         mainSlots.length,
+        when: [for (final d in block) dayDates[d]],
         avoidIds: usedMainIds,
         minFridgeDays: block.length,
       );
@@ -178,7 +210,7 @@ class MealPlanner {
     void rotate(MealType type, int variety) {
       final slots = shares.keys.where((s) => s.type == type).toList();
       if (slots.isEmpty) return;
-      final chosen = pick(type, max(variety, slots.length));
+      final chosen = pick(type, max(variety, slots.length), when: dayDates);
       if (chosen.isEmpty) {
         warnings.add('Nessuna ricetta di tipo "${type.label}" disponibile.');
         return;
@@ -248,8 +280,7 @@ class MealPlanner {
     Macros total(List<MealEntry> ms) {
       var t = Macros.zero;
       for (final m in ms) {
-        final r = recipes.firstWhere((r) => r.id == m.recipeId);
-        t = t + r.macrosPerServing(foods).scale(m.servings);
+        t = t + _perServing(_byId[m.recipeId]!).scale(m.servings);
       }
       for (final e in extras) {
         t = t + foods[e.foodId]!.forGrams(e.grams);
@@ -263,7 +294,7 @@ class MealPlanner {
         () {
           final r = assigned[slot]!;
           final want = kcal * shares[slot]! / shareSum;
-          final servings = _round(want / r.macrosPerServing(foods).kcal, 0.25);
+          final servings = _round(want / _perServing(r).kcal, 0.25);
           return MealEntry(slot, r.id, servings.clamp(0.5, 3.0).toDouble());
         }(),
     ];
@@ -327,8 +358,8 @@ class MealPlanner {
   Macros dayTotal(DayMealPlan d) {
     var t = Macros.zero;
     for (final m in d.meals) {
-      final r = recipes.where((r) => r.id == m.recipeId).firstOrNull;
-      if (r != null) t = t + r.macrosPerServing(foods).scale(m.servings);
+      final r = _byId[m.recipeId];
+      if (r != null) t = t + _perServing(r).scale(m.servings);
     }
     for (final e in d.extras) {
       final f = foods[e.foodId];

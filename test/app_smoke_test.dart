@@ -10,6 +10,8 @@ import 'package:traincal/models/workout.dart';
 import 'package:traincal/state/app_state.dart';
 import 'package:traincal/ui/screens/settings_screen.dart';
 
+import 'test_db.dart';
+
 void main() {
   setUpAll(() async {
     await initializeDateFormatting('it_IT');
@@ -39,7 +41,7 @@ void main() {
       ).toJson(),
     );
     final state = AppState();
-    await state.init(testStore: store);
+    await state.init(testStore: store, db: testDb);
     state.savePlan(state.newPlan(Goal.cut).copyWith(active: true));
     await tester.pumpWidget(
       ChangeNotifierProvider.value(value: state, child: const TraincalApp()),
@@ -75,6 +77,11 @@ void main() {
       expect(find.text('Copia'), findsOneWidget);
 
       await tester.tap(find.text('Ricette').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Cerca ricetta'),
+        'banana e burro',
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text("Banana e burro d'arachidi"));
       await tester.pumpAndSettle();

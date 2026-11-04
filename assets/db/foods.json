@@ -1,0 +1,3490 @@
+[
+ {
+  "id": "f_pollo",
+  "name": "Petto di pollo",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 110,
+   "protein": 23,
+   "carbs": 0,
+   "fat": 1.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cosce_pollo",
+  "name": "Sovracosce di pollo disossate",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 125,
+   "protein": 19.5,
+   "carbs": 0,
+   "fat": 5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_macinato_pollo",
+  "name": "Macinato di pollo e tacchino",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 115,
+   "protein": 20,
+   "carbs": 0,
+   "fat": 4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_tacchino",
+  "name": "Fesa di tacchino",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 107,
+   "protein": 24,
+   "carbs": 0,
+   "fat": 1.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_manzo",
+  "name": "Manzo magro (girello)",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 120,
+   "protein": 21.5,
+   "carbs": 0,
+   "fat": 3.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_spezzatino",
+  "name": "Manzo per spezzatino",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 135,
+   "protein": 20,
+   "carbs": 0,
+   "fat": 6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_macinato",
+  "name": "Macinato di manzo 5%",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 137,
+   "protein": 21,
+   "carbs": 0,
+   "fat": 5.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_vitello",
+  "name": "Fesa di vitello",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 92,
+   "protein": 20.7,
+   "carbs": 0,
+   "fat": 1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_lonza",
+  "name": "Lonza di maiale",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 146,
+   "protein": 21,
+   "carbs": 0,
+   "fat": 7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_salsiccia",
+  "name": "Salsiccia di suino",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 304,
+   "protein": 15.4,
+   "carbs": 0.6,
+   "fat": 26.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_bresaola",
+  "name": "Bresaola",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 151,
+   "protein": 32,
+   "carbs": 0.4,
+   "fat": 2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 80,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_prosciutto_cotto",
+  "name": "Prosciutto cotto",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 132,
+   "protein": 19.8,
+   "carbs": 0.9,
+   "fat": 5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_prosciutto_crudo",
+  "name": "Prosciutto crudo sgrassato",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 160,
+   "protein": 28,
+   "carbs": 0,
+   "fat": 5.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 80,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_speck",
+  "name": "Speck",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 300,
+   "protein": 28,
+   "carbs": 0.5,
+   "fat": 20.9
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_salmone",
+  "name": "Salmone fresco",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 200,
+   "protein": 20,
+   "carbs": 0,
+   "fat": 13
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_salmone_affumicato",
+  "name": "Salmone affumicato",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 147,
+   "protein": 25.4,
+   "carbs": 0,
+   "fat": 4.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_merluzzo",
+  "name": "Merluzzo / nasello",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 75,
+   "protein": 17,
+   "carbs": 0,
+   "fat": 0.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_baccala",
+  "name": "Baccalà ammollato",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 95,
+   "protein": 21.6,
+   "carbs": 0,
+   "fat": 0.8
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_orata",
+  "name": "Orata (filetti)",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 121,
+   "protein": 19.8,
+   "carbs": 0,
+   "fat": 3.8
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_branzino",
+  "name": "Branzino (filetti)",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 97,
+   "protein": 18,
+   "carbs": 0,
+   "fat": 2.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_trota",
+  "name": "Trota salmonata (filetti)",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 119,
+   "protein": 19.8,
+   "carbs": 0,
+   "fat": 4.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_sgombro",
+  "name": "Sgombro (filetti)",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 170,
+   "protein": 17,
+   "carbs": 0,
+   "fat": 11
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_alici",
+  "name": "Alici fresche",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 96,
+   "protein": 16.8,
+   "carbs": 1.5,
+   "fat": 2.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": [
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_pesce_spada",
+  "name": "Pesce spada",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 109,
+   "protein": 16.9,
+   "carbs": 1,
+   "fat": 4.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": [
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_tonno_fresco",
+  "name": "Tonno fresco",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 144,
+   "protein": 23,
+   "carbs": 0,
+   "fat": 5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": [
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_gamberi",
+  "name": "Gamberi sgusciati",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 85,
+   "protein": 18,
+   "carbs": 0.9,
+   "fat": 0.8
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_calamari",
+  "name": "Calamari puliti",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 68,
+   "protein": 12.6,
+   "carbs": 0.6,
+   "fat": 1.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_polpo",
+  "name": "Polpo pulito",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 57,
+   "protein": 10.6,
+   "carbs": 1.4,
+   "fat": 1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 600,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cozze",
+  "name": "Cozze sgusciate",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 84,
+   "protein": 11.7,
+   "carbs": 3.4,
+   "fat": 2.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_tonno",
+  "name": "Tonno al naturale (sgocciolato)",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 108,
+   "protein": 25,
+   "carbs": 0,
+   "fat": 1
+  },
+  "unitGrams": 52,
+  "unitName": "scatoletta",
+  "packageGrams": 156,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_sgombro_scatola",
+  "name": "Sgombro al naturale (sgocciolato)",
+  "category": "meatFish",
+  "per100g": {
+   "kcal": 160,
+   "protein": 21,
+   "carbs": 0,
+   "fat": 8.5
+  },
+  "unitGrams": 90,
+  "unitName": "scatoletta",
+  "packageGrams": 90,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_uova",
+  "name": "Uova",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 128,
+   "protein": 12.4,
+   "carbs": 0,
+   "fat": 8.7
+  },
+  "unitGrams": 55,
+  "unitName": "uovo",
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_albume",
+  "name": "Albume",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 43,
+   "protein": 10.7,
+   "carbs": 0.7,
+   "fat": 0
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_yogurt_greco",
+  "name": "Yogurt greco 0%",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 57,
+   "protein": 10,
+   "carbs": 4,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_yogurt",
+  "name": "Yogurt bianco magro",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 43,
+   "protein": 4.3,
+   "carbs": 5.8,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_skyr",
+  "name": "Skyr",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 63,
+   "protein": 11,
+   "carbs": 4,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 450,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_kefir",
+  "name": "Kefir",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 41,
+   "protein": 3.3,
+   "carbs": 4.5,
+   "fat": 1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_latte",
+  "name": "Latte parzialmente scremato",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 46,
+   "protein": 3.5,
+   "carbs": 5,
+   "fat": 1.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_fiocchi_latte",
+  "name": "Fiocchi di latte",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 98,
+   "protein": 11.5,
+   "carbs": 3,
+   "fat": 4.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_ricotta",
+  "name": "Ricotta vaccina",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 146,
+   "protein": 8.8,
+   "carbs": 3.5,
+   "fat": 10.9
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_mozzarella_light",
+  "name": "Mozzarella light",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 163,
+   "protein": 19,
+   "carbs": 1.5,
+   "fat": 9
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 125,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_mozzarella",
+  "name": "Mozzarella fior di latte",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 253,
+   "protein": 18.7,
+   "carbs": 0.7,
+   "fat": 19.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 125,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_scamorza",
+  "name": "Scamorza",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 334,
+   "protein": 25,
+   "carbs": 1,
+   "fat": 25.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_parmigiano",
+  "name": "Parmigiano Reggiano",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 392,
+   "protein": 33.5,
+   "carbs": 0,
+   "fat": 28.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pecorino",
+  "name": "Pecorino romano",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 387,
+   "protein": 28.5,
+   "carbs": 0.2,
+   "fat": 31
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_feta",
+  "name": "Feta",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 264,
+   "protein": 14,
+   "carbs": 4,
+   "fat": 21
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_spalmabile",
+  "name": "Formaggio spalmabile light",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 140,
+   "protein": 8,
+   "carbs": 4,
+   "fat": 10
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_burro",
+  "name": "Burro",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 717,
+   "protein": 0.8,
+   "carbs": 0.1,
+   "fat": 81
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 125,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_whey",
+  "name": "Proteine whey",
+  "category": "dairyEggs",
+  "per100g": {
+   "kcal": 380,
+   "protein": 78,
+   "carbs": 7,
+   "fat": 5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_avena",
+  "name": "Fiocchi d'avena",
+  "category": "grains",
+  "per100g": {
+   "kcal": 370,
+   "protein": 13.5,
+   "carbs": 60,
+   "fat": 7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_muesli",
+  "name": "Muesli senza zuccheri aggiunti",
+  "category": "grains",
+  "per100g": {
+   "kcal": 360,
+   "protein": 10,
+   "carbs": 62,
+   "fat": 6.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pasta",
+  "name": "Pasta di semola",
+  "category": "grains",
+  "per100g": {
+   "kcal": 355,
+   "protein": 12.5,
+   "carbs": 71,
+   "fat": 1.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pasta_int",
+  "name": "Pasta integrale",
+  "category": "grains",
+  "per100g": {
+   "kcal": 340,
+   "protein": 13.5,
+   "carbs": 64,
+   "fat": 2.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pasta_legumi",
+  "name": "Pasta di lenticchie rosse",
+  "category": "grains",
+  "per100g": {
+   "kcal": 340,
+   "protein": 25,
+   "carbs": 50,
+   "fat": 2.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_lasagne",
+  "name": "Sfoglie per lasagne (secche)",
+  "category": "grains",
+  "per100g": {
+   "kcal": 355,
+   "protein": 12.5,
+   "carbs": 71,
+   "fat": 1.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_gnocchi",
+  "name": "Gnocchi di patate",
+  "category": "grains",
+  "per100g": {
+   "kcal": 160,
+   "protein": 3.5,
+   "carbs": 34,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_noodles_riso",
+  "name": "Noodles di riso",
+  "category": "grains",
+  "per100g": {
+   "kcal": 360,
+   "protein": 6,
+   "carbs": 80,
+   "fat": 0.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_riso",
+  "name": "Riso basmati",
+  "category": "grains",
+  "per100g": {
+   "kcal": 355,
+   "protein": 7.5,
+   "carbs": 79,
+   "fat": 0.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_riso_carnaroli",
+  "name": "Riso Carnaroli",
+  "category": "grains",
+  "per100g": {
+   "kcal": 350,
+   "protein": 7,
+   "carbs": 79,
+   "fat": 0.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_riso_int",
+  "name": "Riso integrale",
+  "category": "grains",
+  "per100g": {
+   "kcal": 360,
+   "protein": 7.5,
+   "carbs": 74,
+   "fat": 2.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_riso_venere",
+  "name": "Riso Venere",
+  "category": "grains",
+  "per100g": {
+   "kcal": 360,
+   "protein": 8,
+   "carbs": 74,
+   "fat": 3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_farro",
+  "name": "Farro perlato",
+  "category": "grains",
+  "per100g": {
+   "kcal": 340,
+   "protein": 14,
+   "carbs": 67,
+   "fat": 2.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_orzo",
+  "name": "Orzo perlato",
+  "category": "grains",
+  "per100g": {
+   "kcal": 350,
+   "protein": 10,
+   "carbs": 72,
+   "fat": 1.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_quinoa",
+  "name": "Quinoa",
+  "category": "grains",
+  "per100g": {
+   "kcal": 368,
+   "protein": 14,
+   "carbs": 64,
+   "fat": 6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_couscous",
+  "name": "Cous cous",
+  "category": "grains",
+  "per100g": {
+   "kcal": 370,
+   "protein": 13,
+   "carbs": 74,
+   "fat": 0.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_bulgur",
+  "name": "Bulgur",
+  "category": "grains",
+  "per100g": {
+   "kcal": 342,
+   "protein": 12.3,
+   "carbs": 63,
+   "fat": 1.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_grano_saraceno",
+  "name": "Grano saraceno",
+  "category": "grains",
+  "per100g": {
+   "kcal": 343,
+   "protein": 13.3,
+   "carbs": 62,
+   "fat": 3.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_miglio",
+  "name": "Miglio decorticato",
+  "category": "grains",
+  "per100g": {
+   "kcal": 378,
+   "protein": 11,
+   "carbs": 72,
+   "fat": 4.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_polenta",
+  "name": "Farina di mais per polenta",
+  "category": "grains",
+  "per100g": {
+   "kcal": 362,
+   "protein": 8.7,
+   "carbs": 77,
+   "fat": 2.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_farina",
+  "name": "Farina tipo 0",
+  "category": "grains",
+  "per100g": {
+   "kcal": 340,
+   "protein": 11,
+   "carbs": 73,
+   "fat": 1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_farina_int",
+  "name": "Farina integrale",
+  "category": "grains",
+  "per100g": {
+   "kcal": 330,
+   "protein": 12,
+   "carbs": 64,
+   "fat": 2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_farina_ceci",
+  "name": "Farina di ceci",
+  "category": "grains",
+  "per100g": {
+   "kcal": 360,
+   "protein": 21,
+   "carbs": 54,
+   "fat": 6.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pangrattato",
+  "name": "Pangrattato",
+  "category": "grains",
+  "per100g": {
+   "kcal": 350,
+   "protein": 12,
+   "carbs": 72,
+   "fat": 2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pane",
+  "name": "Pane comune",
+  "category": "grains",
+  "per100g": {
+   "kcal": 270,
+   "protein": 8.5,
+   "carbs": 56,
+   "fat": 1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pane_int",
+  "name": "Pane integrale",
+  "category": "grains",
+  "per100g": {
+   "kcal": 245,
+   "protein": 9,
+   "carbs": 44,
+   "fat": 3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_fette",
+  "name": "Fette biscottate",
+  "category": "grains",
+  "per100g": {
+   "kcal": 405,
+   "protein": 11,
+   "carbs": 76,
+   "fat": 6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_gallette",
+  "name": "Gallette di riso",
+  "category": "grains",
+  "per100g": {
+   "kcal": 385,
+   "protein": 8,
+   "carbs": 81,
+   "fat": 3
+  },
+  "unitGrams": 8,
+  "unitName": "galletta",
+  "packageGrams": 120,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_crackers",
+  "name": "Cracker integrali",
+  "category": "grains",
+  "per100g": {
+   "kcal": 420,
+   "protein": 10,
+   "carbs": 66,
+   "fat": 12
+  },
+  "unitGrams": 25,
+  "unitName": "pacchetto",
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_tortilla",
+  "name": "Tortilla integrale",
+  "category": "grains",
+  "per100g": {
+   "kcal": 300,
+   "protein": 9,
+   "carbs": 48,
+   "fat": 7
+  },
+  "unitGrams": 62,
+  "unitName": "tortilla",
+  "packageGrams": 370,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_piadina",
+  "name": "Piadina",
+  "category": "grains",
+  "per100g": {
+   "kcal": 320,
+   "protein": 8,
+   "carbs": 50,
+   "fat": 9
+  },
+  "unitGrams": 100,
+  "unitName": "piadina",
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_patate",
+  "name": "Patate",
+  "category": "grains",
+  "per100g": {
+   "kcal": 77,
+   "protein": 2,
+   "carbs": 17,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_patate_dolci",
+  "name": "Patate dolci",
+  "category": "grains",
+  "per100g": {
+   "kcal": 86,
+   "protein": 1.6,
+   "carbs": 20,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": [
+   9,
+   10,
+   11,
+   12,
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "id": "f_ceci",
+  "name": "Ceci in scatola (sgocciolati)",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 119,
+   "protein": 7,
+   "carbs": 16.5,
+   "fat": 2.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 240,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_fagioli",
+  "name": "Fagioli borlotti in scatola (sgocciolati)",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 100,
+   "protein": 6.5,
+   "carbs": 15,
+   "fat": 0.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 240,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cannellini",
+  "name": "Fagioli cannellini in scatola (sgocciolati)",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 92,
+   "protein": 6.5,
+   "carbs": 13,
+   "fat": 0.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 240,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_fagioli_neri",
+  "name": "Fagioli neri in scatola (sgocciolati)",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 91,
+   "protein": 6,
+   "carbs": 13,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 240,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_lenticchie",
+  "name": "Lenticchie secche",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 330,
+   "protein": 24,
+   "carbs": 51,
+   "fat": 1.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_lenticchie_rosse",
+  "name": "Lenticchie rosse decorticate",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 340,
+   "protein": 24,
+   "carbs": 53,
+   "fat": 1.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_fave_secche",
+  "name": "Fave secche decorticate",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 340,
+   "protein": 27,
+   "carbs": 47,
+   "fat": 2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_tofu",
+  "name": "Tofu",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 130,
+   "protein": 13,
+   "carbs": 2,
+   "fat": 7.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_tempeh",
+  "name": "Tempeh",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 192,
+   "protein": 20,
+   "carbs": 7.6,
+   "fat": 10.8
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_seitan",
+  "name": "Seitan",
+  "category": "legumes",
+  "per100g": {
+   "kcal": 130,
+   "protein": 25,
+   "carbs": 4,
+   "fat": 2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_banana",
+  "name": "Banana",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 89,
+   "protein": 1.1,
+   "carbs": 20,
+   "fat": 0.3
+  },
+  "unitGrams": 120,
+  "unitName": "banana",
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_mela",
+  "name": "Mela",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 52,
+   "protein": 0.3,
+   "carbs": 12.5,
+   "fat": 0.2
+  },
+  "unitGrams": 150,
+  "unitName": "mela",
+  "packageGrams": null,
+  "seasonMonths": [
+   8,
+   9,
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_pera",
+  "name": "Pera",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 57,
+   "protein": 0.4,
+   "carbs": 13,
+   "fat": 0.1
+  },
+  "unitGrams": 170,
+  "unitName": "pera",
+  "packageGrams": null,
+  "seasonMonths": [
+   8,
+   9,
+   10,
+   11,
+   12,
+   1,
+   2
+  ]
+ },
+ {
+  "id": "f_kiwi",
+  "name": "Kiwi",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 61,
+   "protein": 1.1,
+   "carbs": 13,
+   "fat": 0.5
+  },
+  "unitGrams": 75,
+  "unitName": "kiwi",
+  "packageGrams": null,
+  "seasonMonths": [
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_arancia",
+  "name": "Arancia",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 47,
+   "protein": 0.9,
+   "carbs": 10.5,
+   "fat": 0.1
+  },
+  "unitGrams": 180,
+  "unitName": "arancia",
+  "packageGrams": null,
+  "seasonMonths": [
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_mandarini",
+  "name": "Mandarini / clementine",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 53,
+   "protein": 0.8,
+   "carbs": 12,
+   "fat": 0.3
+  },
+  "unitGrams": 80,
+  "unitName": "mandarino",
+  "packageGrams": null,
+  "seasonMonths": [
+   11,
+   12,
+   1,
+   2
+  ]
+ },
+ {
+  "id": "f_pompelmo",
+  "name": "Pompelmo",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 42,
+   "protein": 0.8,
+   "carbs": 9.5,
+   "fat": 0.1
+  },
+  "unitGrams": 300,
+  "unitName": "pompelmo",
+  "packageGrams": null,
+  "seasonMonths": [
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_limone",
+  "name": "Limone",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 29,
+   "protein": 1.1,
+   "carbs": 6.5,
+   "fat": 0.3
+  },
+  "unitGrams": 100,
+  "unitName": "limone",
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cachi",
+  "name": "Cachi",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 70,
+   "protein": 0.6,
+   "carbs": 16,
+   "fat": 0.2
+  },
+  "unitGrams": 200,
+  "unitName": "caco",
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12
+  ]
+ },
+ {
+  "id": "f_melograno",
+  "name": "Melograno (arilli)",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 83,
+   "protein": 1.7,
+   "carbs": 15,
+   "fat": 1.2
+  },
+  "unitGrams": 200,
+  "unitName": "melograno",
+  "packageGrams": null,
+  "seasonMonths": [
+   9,
+   10,
+   11,
+   12
+  ]
+ },
+ {
+  "id": "f_uva",
+  "name": "Uva",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 69,
+   "protein": 0.7,
+   "carbs": 16,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": [
+   8,
+   9,
+   10
+  ]
+ },
+ {
+  "id": "f_fichi",
+  "name": "Fichi",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 74,
+   "protein": 0.8,
+   "carbs": 16,
+   "fat": 0.3
+  },
+  "unitGrams": 50,
+  "unitName": "fico",
+  "packageGrams": null,
+  "seasonMonths": [
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_fragole",
+  "name": "Fragole",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 32,
+   "protein": 0.7,
+   "carbs": 6,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": [
+   4,
+   5,
+   6
+  ]
+ },
+ {
+  "id": "f_ciliegie",
+  "name": "Ciliegie",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 63,
+   "protein": 1,
+   "carbs": 14,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": [
+   5,
+   6,
+   7
+  ]
+ },
+ {
+  "id": "f_albicocche",
+  "name": "Albicocche",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 48,
+   "protein": 1.4,
+   "carbs": 9.5,
+   "fat": 0.4
+  },
+  "unitGrams": 40,
+  "unitName": "albicocca",
+  "packageGrams": null,
+  "seasonMonths": [
+   6,
+   7
+  ]
+ },
+ {
+  "id": "f_pesche",
+  "name": "Pesche",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 39,
+   "protein": 0.9,
+   "carbs": 8.5,
+   "fat": 0.3
+  },
+  "unitGrams": 180,
+  "unitName": "pesca",
+  "packageGrams": null,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_prugne",
+  "name": "Prugne / susine",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 46,
+   "protein": 0.7,
+   "carbs": 10,
+   "fat": 0.3
+  },
+  "unitGrams": 50,
+  "unitName": "prugna",
+  "packageGrams": null,
+  "seasonMonths": [
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_melone",
+  "name": "Melone",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 34,
+   "protein": 0.8,
+   "carbs": 8,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1500,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_anguria",
+  "name": "Anguria",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 30,
+   "protein": 0.6,
+   "carbs": 7.5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 3000,
+  "seasonMonths": [
+   6,
+   7,
+   8
+  ]
+ },
+ {
+  "id": "f_mirtilli",
+  "name": "Mirtilli freschi",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 57,
+   "protein": 0.7,
+   "carbs": 12,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 125,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_lamponi",
+  "name": "Lamponi freschi",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 52,
+   "protein": 1.2,
+   "carbs": 5.5,
+   "fat": 0.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 125,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_castagne",
+  "name": "Castagne",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 196,
+   "protein": 2.9,
+   "carbs": 42,
+   "fat": 1.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": [
+   10,
+   11,
+   12
+  ]
+ },
+ {
+  "id": "f_ananas",
+  "name": "Ananas",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 50,
+   "protein": 0.5,
+   "carbs": 12,
+   "fat": 0.1
+  },
+  "unitGrams": 1000,
+  "unitName": "ananas",
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_avocado",
+  "name": "Avocado",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 160,
+   "protein": 2,
+   "carbs": 2,
+   "fat": 14.7
+  },
+  "unitGrams": 150,
+  "unitName": "avocado",
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_datteri",
+  "name": "Datteri secchi",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 280,
+   "protein": 2.5,
+   "carbs": 66,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_uvetta",
+  "name": "Uvetta",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 299,
+   "protein": 3,
+   "carbs": 75,
+   "fat": 0.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_albicocche_secche",
+  "name": "Albicocche secche",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 240,
+   "protein": 3.4,
+   "carbs": 55,
+   "fat": 0.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_fichi_secchi",
+  "name": "Fichi secchi",
+  "category": "fruit",
+  "per100g": {
+   "kcal": 250,
+   "protein": 3.3,
+   "carbs": 57,
+   "fat": 0.9
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_zucchine",
+  "name": "Zucchine",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 17,
+   "protein": 1.2,
+   "carbs": 3.1,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_melanzane",
+  "name": "Melanzane",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 18,
+   "protein": 1.1,
+   "carbs": 2.6,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9,
+   10
+  ]
+ },
+ {
+  "id": "f_peperoni",
+  "name": "Peperoni",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 27,
+   "protein": 1,
+   "carbs": 5,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9,
+   10
+  ]
+ },
+ {
+  "id": "f_pomodorini",
+  "name": "Pomodorini",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 20,
+   "protein": 1,
+   "carbs": 3.9,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_pomodori",
+  "name": "Pomodori da insalata",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 18,
+   "protein": 0.9,
+   "carbs": 3.5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_cetrioli",
+  "name": "Cetrioli",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 14,
+   "protein": 0.7,
+   "carbs": 2.5,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_fagiolini",
+  "name": "Fagiolini",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 31,
+   "protein": 1.8,
+   "carbs": 5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9
+  ]
+ },
+ {
+  "id": "f_fiori_zucca",
+  "name": "Fiori di zucca",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 12,
+   "protein": 1,
+   "carbs": 1,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": [
+   5,
+   6,
+   7
+  ]
+ },
+ {
+  "id": "f_asparagi",
+  "name": "Asparagi",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 24,
+   "protein": 3.6,
+   "carbs": 2,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": [
+   3,
+   4,
+   5,
+   6
+  ]
+ },
+ {
+  "id": "f_fave_fresche",
+  "name": "Fave fresche sgranate",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 64,
+   "protein": 5.2,
+   "carbs": 8.5,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   4,
+   5,
+   6
+  ]
+ },
+ {
+  "id": "f_piselli_freschi",
+  "name": "Piselli freschi sgranati",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 76,
+   "protein": 5.5,
+   "carbs": 11,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   4,
+   5,
+   6
+  ]
+ },
+ {
+  "id": "f_carciofi",
+  "name": "Carciofi (cuori puliti)",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 33,
+   "protein": 2.7,
+   "carbs": 2.5,
+   "fat": 0.2
+  },
+  "unitGrams": 60,
+  "unitName": "carciofo",
+  "packageGrams": null,
+  "seasonMonths": [
+   11,
+   12,
+   1,
+   2,
+   3,
+   4,
+   5
+  ]
+ },
+ {
+  "id": "f_zucca",
+  "name": "Zucca (polpa)",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 26,
+   "protein": 1.1,
+   "carbs": 5.5,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   9,
+   10,
+   11,
+   12,
+   1
+  ]
+ },
+ {
+  "id": "f_cavolo_nero",
+  "name": "Cavolo nero",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 43,
+   "protein": 3.3,
+   "carbs": 5,
+   "fat": 0.9
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "id": "f_cavolfiore",
+  "name": "Cavolfiore",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 25,
+   "protein": 2,
+   "carbs": 3,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_broccoli",
+  "name": "Broccoli",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 34,
+   "protein": 2.8,
+   "carbs": 4.5,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_cavolini",
+  "name": "Cavolini di Bruxelles",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 43,
+   "protein": 3.4,
+   "carbs": 5,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2
+  ]
+ },
+ {
+  "id": "f_verza",
+  "name": "Verza",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 27,
+   "protein": 2.1,
+   "carbs": 3.5,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "id": "f_cavolo_rosso",
+  "name": "Cavolo cappuccio rosso",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 31,
+   "protein": 1.4,
+   "carbs": 5.5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "id": "f_cime_rapa",
+  "name": "Cime di rapa",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 28,
+   "protein": 3,
+   "carbs": 2,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "id": "f_finocchi",
+  "name": "Finocchi",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 31,
+   "protein": 1.2,
+   "carbs": 4,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_porri",
+  "name": "Porri",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 35,
+   "protein": 2.1,
+   "carbs": 5.2,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_radicchio",
+  "name": "Radicchio rosso",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 23,
+   "protein": 1.4,
+   "carbs": 3.5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "id": "f_spinaci",
+  "name": "Spinaci",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 23,
+   "protein": 2.9,
+   "carbs": 1.6,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4,
+   5
+  ]
+ },
+ {
+  "id": "f_bietole",
+  "name": "Bietole",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 19,
+   "protein": 1.8,
+   "carbs": 2.8,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   9,
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ]
+ },
+ {
+  "id": "f_valeriana",
+  "name": "Valeriana / songino",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 21,
+   "protein": 2,
+   "carbs": 2.5,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 125,
+  "seasonMonths": [
+   10,
+   11,
+   12,
+   1,
+   2,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "f_barbabietola",
+  "name": "Barbabietola cotta",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 43,
+   "protein": 1.6,
+   "carbs": 8,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": [
+   6,
+   7,
+   8,
+   9,
+   10,
+   11
+  ]
+ },
+ {
+  "id": "f_funghi",
+  "name": "Funghi champignon",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 22,
+   "protein": 3.1,
+   "carbs": 3.3,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_funghi_porcini",
+  "name": "Funghi porcini / misti di bosco",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 26,
+   "protein": 3.9,
+   "carbs": 1,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": [
+   9,
+   10,
+   11
+  ]
+ },
+ {
+  "id": "f_carote",
+  "name": "Carote",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 41,
+   "protein": 0.9,
+   "carbs": 8,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cipolla",
+  "name": "Cipolla",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 40,
+   "protein": 1.1,
+   "carbs": 9,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cipolla_rossa",
+  "name": "Cipolla rossa",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 40,
+   "protein": 1.1,
+   "carbs": 9,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_sedano",
+  "name": "Sedano",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 16,
+   "protein": 0.7,
+   "carbs": 3,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_aglio",
+  "name": "Aglio",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 149,
+   "protein": 6.4,
+   "carbs": 30,
+   "fat": 0.5
+  },
+  "unitGrams": 5,
+  "unitName": "spicchio",
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_zenzero",
+  "name": "Zenzero fresco",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 80,
+   "protein": 1.8,
+   "carbs": 16,
+   "fat": 0.8
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_insalata",
+  "name": "Insalata mista",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 17,
+   "protein": 1.3,
+   "carbs": 2.5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_rucola",
+  "name": "Rucola",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 25,
+   "protein": 2.6,
+   "carbs": 2,
+   "fat": 0.7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 125,
+  "seasonMonths": [
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11
+  ]
+ },
+ {
+  "id": "f_basilico",
+  "name": "Basilico fresco",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 23,
+   "protein": 3.2,
+   "carbs": 1,
+   "fat": 0.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 30,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_prezzemolo",
+  "name": "Prezzemolo fresco",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 36,
+   "protein": 3,
+   "carbs": 6,
+   "fat": 0.8
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 30,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_erbe",
+  "name": "Erbe aromatiche fresche (rosmarino, salvia, timo)",
+  "category": "vegetables",
+  "per100g": {
+   "kcal": 40,
+   "protein": 2,
+   "carbs": 5,
+   "fat": 1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 30,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_mandorle",
+  "name": "Mandorle",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 580,
+   "protein": 21,
+   "carbs": 10,
+   "fat": 50
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_noci",
+  "name": "Noci sgusciate",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 654,
+   "protein": 15,
+   "carbs": 7,
+   "fat": 65
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_nocciole",
+  "name": "Nocciole",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 628,
+   "protein": 15,
+   "carbs": 7,
+   "fat": 61
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_anacardi",
+  "name": "Anacardi",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 553,
+   "protein": 18,
+   "carbs": 30,
+   "fat": 44
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pistacchi",
+  "name": "Pistacchi sgusciati",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 560,
+   "protein": 20,
+   "carbs": 18,
+   "fat": 45
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pinoli",
+  "name": "Pinoli",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 673,
+   "protein": 13.7,
+   "carbs": 13,
+   "fat": 68
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_arachidi",
+  "name": "Arachidi tostate",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 590,
+   "protein": 26,
+   "carbs": 13,
+   "fat": 50
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_burro_arachidi",
+  "name": "Burro d'arachidi",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 590,
+   "protein": 25,
+   "carbs": 16,
+   "fat": 50
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 350,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_crema_mandorle",
+  "name": "Crema di mandorle 100%",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 610,
+   "protein": 21,
+   "carbs": 9,
+   "fat": 54
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_tahina",
+  "name": "Tahina (crema di sesamo)",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 595,
+   "protein": 17,
+   "carbs": 21,
+   "fat": 54
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_chia",
+  "name": "Semi di chia",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 486,
+   "protein": 17,
+   "carbs": 8,
+   "fat": 31
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_semi_lino",
+  "name": "Semi di lino",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 534,
+   "protein": 18,
+   "carbs": 2,
+   "fat": 42
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_semi_zucca",
+  "name": "Semi di zucca",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 560,
+   "protein": 30,
+   "carbs": 10,
+   "fat": 49
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_semi_girasole",
+  "name": "Semi di girasole",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 584,
+   "protein": 21,
+   "carbs": 11,
+   "fat": 51
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_sesamo",
+  "name": "Semi di sesamo",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 573,
+   "protein": 18,
+   "carbs": 12,
+   "fat": 50
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cocco_rape",
+  "name": "Cocco rapé",
+  "category": "nutsSeeds",
+  "per100g": {
+   "kcal": 660,
+   "protein": 7,
+   "carbs": 7,
+   "fat": 64
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_olio",
+  "name": "Olio extravergine d'oliva",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 899,
+   "protein": 0,
+   "carbs": 0,
+   "fat": 99.9
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_passata",
+  "name": "Passata di pomodoro",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 36,
+   "protein": 1.5,
+   "carbs": 6.5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 700,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pelati",
+  "name": "Pomodori pelati",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 22,
+   "protein": 1.2,
+   "carbs": 3.5,
+   "fat": 0.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_concentrato",
+  "name": "Concentrato di pomodoro",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 82,
+   "protein": 4.3,
+   "carbs": 16,
+   "fat": 0.5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 130,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pomodori_secchi",
+  "name": "Pomodori secchi",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 260,
+   "protein": 14,
+   "carbs": 43,
+   "fat": 3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_olive",
+  "name": "Olive nere / taggiasche denocciolate",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 140,
+   "protein": 1,
+   "carbs": 1,
+   "fat": 15
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_capperi",
+  "name": "Capperi dissalati",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 23,
+   "protein": 2.4,
+   "carbs": 2,
+   "fat": 0.9
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_mais",
+  "name": "Mais dolce in scatola (sgocciolato)",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 86,
+   "protein": 3,
+   "carbs": 16,
+   "fat": 1.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_brodo",
+  "name": "Brodo vegetale (pronto o da dado)",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 6,
+   "protein": 0.3,
+   "carbs": 1,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_latte_cocco",
+  "name": "Latte di cocco light",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 73,
+   "protein": 0.7,
+   "carbs": 2,
+   "fat": 7
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_bevanda_soia",
+  "name": "Bevanda di soia senza zuccheri",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 33,
+   "protein": 3.3,
+   "carbs": 0.7,
+   "fat": 1.8
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_miele",
+  "name": "Miele",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 304,
+   "protein": 0.3,
+   "carbs": 82,
+   "fat": 0
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 500,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_sciroppo_acero",
+  "name": "Sciroppo d'acero",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 260,
+   "protein": 0,
+   "carbs": 67,
+   "fat": 0
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_marmellata",
+  "name": "Confettura extra di frutta",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 220,
+   "protein": 0.5,
+   "carbs": 54,
+   "fat": 0
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 340,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_zucchero_canna",
+  "name": "Zucchero di canna",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 390,
+   "protein": 0,
+   "carbs": 99,
+   "fat": 0
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cacao",
+  "name": "Cacao amaro in polvere",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 355,
+   "protein": 20.4,
+   "carbs": 11.5,
+   "fat": 25.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 75,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cioccolato",
+  "name": "Cioccolato fondente 85%",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 600,
+   "protein": 10,
+   "carbs": 19,
+   "fat": 52
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 100,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_lievito",
+  "name": "Lievito per dolci",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 100,
+   "protein": 0,
+   "carbs": 25,
+   "fat": 0
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 16,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_soia",
+  "name": "Salsa di soia",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 53,
+   "protein": 8,
+   "carbs": 5,
+   "fat": 0.6
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 150,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_aceto",
+  "name": "Aceto balsamico",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 88,
+   "protein": 0.5,
+   "carbs": 17,
+   "fat": 0
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_senape",
+  "name": "Senape",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 66,
+   "protein": 4.4,
+   "carbs": 5.8,
+   "fat": 4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 200,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_pesto",
+  "name": "Pesto alla genovese",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 450,
+   "protein": 5,
+   "carbs": 6,
+   "fat": 45
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 190,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_curry",
+  "name": "Curry in polvere",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 325,
+   "protein": 14,
+   "carbs": 25,
+   "fat": 14
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 50,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_paprika",
+  "name": "Paprika dolce",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 282,
+   "protein": 14,
+   "carbs": 20,
+   "fat": 13
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 50,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cumino",
+  "name": "Cumino in polvere",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 375,
+   "protein": 18,
+   "carbs": 34,
+   "fat": 22
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 50,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_curcuma",
+  "name": "Curcuma in polvere",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 312,
+   "protein": 9.7,
+   "carbs": 45,
+   "fat": 3.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 50,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cannella",
+  "name": "Cannella in polvere",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 247,
+   "protein": 4,
+   "carbs": 27,
+   "fat": 1.2
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 50,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_spezie",
+  "name": "Spezie miste (origano, peperoncino, pepe)",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 270,
+   "protein": 9,
+   "carbs": 26,
+   "fat": 4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 50,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_garam",
+  "name": "Garam masala",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 330,
+   "protein": 13,
+   "carbs": 40,
+   "fat": 15
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 50,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_frutti_bosco",
+  "name": "Frutti di bosco surgelati",
+  "category": "frozen",
+  "per100g": {
+   "kcal": 45,
+   "protein": 0.8,
+   "carbs": 8,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 300,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_piselli",
+  "name": "Piselli surgelati",
+  "category": "frozen",
+  "per100g": {
+   "kcal": 75,
+   "protein": 5.4,
+   "carbs": 10,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 450,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_edamame",
+  "name": "Edamame surgelati",
+  "category": "frozen",
+  "per100g": {
+   "kcal": 121,
+   "protein": 12,
+   "carbs": 9,
+   "fat": 5
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 400,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_spinaci_surg",
+  "name": "Spinaci surgelati",
+  "category": "frozen",
+  "per100g": {
+   "kcal": 25,
+   "protein": 3,
+   "carbs": 1.5,
+   "fat": 0.4
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 450,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_minestrone_surg",
+  "name": "Verdure per minestrone surgelate",
+  "category": "frozen",
+  "per100g": {
+   "kcal": 35,
+   "protein": 2,
+   "carbs": 5.5,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 1000,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_amido_mais",
+  "name": "Amido di mais (maizena)",
+  "category": "pantry",
+  "per100g": {
+   "kcal": 350,
+   "protein": 0.3,
+   "carbs": 87,
+   "fat": 0.1
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": 250,
+  "seasonMonths": []
+ }
+]

@@ -16,16 +16,90 @@ class RecipesScreen extends StatefulWidget {
 }
 
 class _RecipesScreenState extends State<RecipesScreen> {
+  static const _dietTags = ['vegetariano', 'vegano', 'senza glutine'];
+
   MealType? _type;
   String _query = '';
+  bool _seasonOnly = false;
+  final Set<String> _tags = {};
 
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final days = s.weekDays;
+    final q = _query.toLowerCase();
     final list = s.recipes
         .where((r) => _type == null || r.type == _type)
-        .where((r) => r.name.toLowerCase().contains(_query.toLowerCase()))
+        .where((r) => r.name.toLowerCase().contains(q))
+        .where((r) => _tags.every(r.tags.contains))
+        .where((r) => !_seasonOnly || r.isInSeason(s.foods, days))
         .toList();
+
+    final header = [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: TextField(
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.search),
+            hintText: 'Cerca ricetta',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          onChanged: (v) => setState(() => _query = v),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            ChoiceChip(
+              label: const Text('Tutte'),
+              selected: _type == null,
+              onSelected: (_) => setState(() => _type = null),
+            ),
+            for (final t in MealType.values)
+              ChoiceChip(
+                label: Text(t.label),
+                selected: _type == t,
+                onSelected: (_) => setState(() => _type = t),
+              ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            FilterChip(
+              avatar: const Icon(Icons.eco_outlined, size: 18),
+              label: const Text('Di stagione'),
+              tooltip: 'Nessun ingrediente fuori stagione nella settimana '
+                  'selezionata',
+              selected: _seasonOnly,
+              onSelected: (v) => setState(() => _seasonOnly = v),
+            ),
+            for (final t in _dietTags)
+              FilterChip(
+                label: Text(t),
+                selected: _tags.contains(t),
+                onSelected: (v) =>
+                    setState(() => v ? _tags.add(t) : _tags.remove(t)),
+              ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        child: Text(
+          '${list.length} ricette',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+      ),
+    ];
 
     return Scaffold(
       floatingActionButton: Column(
@@ -56,64 +130,56 @@ class _RecipesScreenState extends State<RecipesScreen> {
           ),
         ],
       ),
-      body: ListView(
+      // Lista costruita a richiesta: il database contiene centinaia di
+      // ricette.
+      body: ListView.builder(
         padding: const EdgeInsets.only(bottom: 140),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Cerca ricetta',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              onChanged: (v) => setState(() => _query = v),
+        itemCount: header.length + list.length,
+        itemBuilder: (context, i) {
+          if (i < header.length) return header[i];
+          final r = list[i - header.length];
+          final inSeason = r.isInSeason(s.foods, days);
+          return ListTile(
+            leading: Icon(switch (r.source) {
+              RecipeSource.builtin => Icons.menu_book,
+              RecipeSource.user => Icons.person,
+              RecipeSource.ai => Icons.auto_awesome,
+            }),
+            title: Text(r.name),
+            subtitle: Text(
+              '${r.type.label} · ${r.macrosPerServing(s.foods)}'
+              '${inSeason ? '' : ' · fuori stagione'}',
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('Tutte'),
-                  selected: _type == null,
-                  onSelected: (_) => setState(() => _type = null),
-                ),
-                for (final t in MealType.values)
-                  ChoiceChip(
-                    label: Text(t.label),
-                    selected: _type == t,
-                    onSelected: (_) => setState(() => _type = t),
-                  ),
-              ],
-            ),
-          ),
-          for (final r in list)
-            ListTile(
-              leading: Icon(switch (r.source) {
-                RecipeSource.builtin => Icons.menu_book,
-                RecipeSource.user => Icons.person,
-                RecipeSource.ai => Icons.auto_awesome,
-              }),
-              title: Text(r.name),
-              subtitle: Text(
-                '${r.type.label} · ${r.macrosPerServing(s.foods)}',
+            trailing: Tooltip(
+              message: 'Usa nel meal prep',
+              child: Switch(
+                value: !s.mealPrepPrefs.excludedRecipeIds.contains(r.id),
+                onChanged: (v) => s.setRecipeExcluded(r.id, !v),
               ),
-              trailing: Tooltip(
-                message: 'Usa nel meal prep',
-                child: Switch(
-                  value: !s.mealPrepPrefs.excludedRecipeIds.contains(r.id),
-                  onChanged: (v) => s.setRecipeExcluded(r.id, !v),
-                ),
-              ),
-              onTap: () => showRecipeDetail(context, r),
             ),
-        ],
+            onTap: () => showRecipeDetail(context, r),
+          );
+        },
       ),
     );
   }
+}
+
+const _derivedTags = {
+  'vegetariano',
+  'vegano',
+  'senza glutine',
+  'senza lattosio',
+};
+
+/// Nota di stagionalità di un ingrediente per la settimana selezionata.
+String _seasonNote(Food? f, List<DateTime> days) {
+  if (f == null || !f.isSeasonal) return '';
+  return days.every(f.inSeason)
+      ? ' (di stagione)'
+      : days.any(f.inSeason)
+      ? ' (a fine o inizio stagione)'
+      : ' (fuori stagione)';
 }
 
 void _openEditor(BuildContext context, Recipe? r) {
@@ -147,10 +213,22 @@ Future<void> showRecipeDetail(BuildContext context, Recipe r) {
                 '${r.type.label} · ${r.prepMinutes} min · frigo ${r.fridgeDays} gg'
                 '${r.freezable ? ' · congelabile' : ''}',
               ),
+              if (r.tags.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final t in r.tags)
+                      Chip(label: Text(t), visualDensity: VisualDensity.compact),
+                  ],
+                ),
+              ],
               const Divider(),
               for (final i in r.ingredients)
                 Text(
-                  '• ${s.foods[i.foodId]?.name ?? i.foodId}: ${i.grams.round()} g',
+                  '• ${s.foods[i.foodId]?.name ?? i.foodId}: ${i.grams.round()} g'
+                  '${_seasonNote(s.foods[i.foodId], s.weekDays)}',
                 ),
               if (r.instructions.isNotEmpty) ...[
                 const Divider(),
@@ -250,6 +328,12 @@ class _RecipeEditorState extends State<RecipeEditor> {
     fridgeDays: _fridge,
     freezable: _freezable,
     prepMinutes: _minutes,
+    // Le etichette di dieta dipendono dagli ingredienti, che qui possono
+    // cambiare: restano solo le altre.
+    tags: [
+      for (final t in widget.initial?.tags ?? const <String>[])
+        if (!_derivedTags.contains(t)) t,
+    ],
     source: widget.initial?.source == RecipeSource.ai
         ? RecipeSource.ai
         : RecipeSource.user,

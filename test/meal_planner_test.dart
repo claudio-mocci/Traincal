@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:traincal/data/seed_foods.dart';
-import 'package:traincal/data/seed_recipes.dart';
 import 'package:traincal/models/profile.dart';
 import 'package:traincal/models/recipe.dart';
 import 'package:traincal/models/workout.dart';
@@ -8,45 +6,52 @@ import 'package:traincal/services/energy_calculator.dart';
 import 'package:traincal/services/meal_planner.dart';
 import 'package:traincal/services/shopping_list.dart';
 
+import 'test_db.dart';
+
 void main() {
-  final foods = {for (final f in seedFoods) f.id: f};
-  final recipes = {for (final r in seedRecipes) r.id: r};
+  final dbRecipes = testDb.recipes;
+  final foods = {for (final f in testDb.foods) f.id: f};
+  final recipes = {for (final r in dbRecipes) r.id: r};
   final monday = DateTime(2026, 11, 2);
-  final week = List.generate(7, (i) => monday.add(Duration(days: i)));
   const profile = UserProfile(weightKg: 72, heightCm: 178, birthYear: 1988);
 
-  final energy = EnergyCalculator.computeDays(
-    days: week,
-    workouts: [
-      Workout(
-        id: 'e1',
-        completed: false,
-        eventId: 1,
-        date: week[1],
-        icuType: 'Run',
-        name: 'Ripetute',
-        movingTimeSec: 3600,
-        trainingLoad: 80,
-        distanceM: 12000,
-      ),
-      Workout(
-        id: 'e2',
-        completed: false,
-        eventId: 2,
-        date: week[5],
-        icuType: 'Ride',
-        name: 'Lungo',
-        movingTimeSec: 4 * 3600,
-        joules: 2800000,
-      ),
-    ],
-    profile: profile,
-    plan: null,
-    today: monday,
-  );
+  List<DayEnergy> energyFor(DateTime monday) {
+    final week = List.generate(7, (i) => monday.add(Duration(days: i)));
+    return EnergyCalculator.computeDays(
+      days: week,
+      workouts: [
+        Workout(
+          id: 'e1',
+          completed: false,
+          eventId: 1,
+          date: week[1],
+          icuType: 'Run',
+          name: 'Ripetute',
+          movingTimeSec: 3600,
+          trainingLoad: 80,
+          distanceM: 12000,
+        ),
+        Workout(
+          id: 'e2',
+          completed: false,
+          eventId: 2,
+          date: week[5],
+          icuType: 'Ride',
+          name: 'Lungo',
+          movingTimeSec: 4 * 3600,
+          joules: 2800000,
+        ),
+      ],
+      profile: profile,
+      plan: null,
+      today: monday,
+    );
+  }
+
+  final energy = energyFor(monday);
 
   test('tutti gli ingredienti delle ricette esistono nel database', () {
-    for (final r in seedRecipes) {
+    for (final r in dbRecipes) {
       for (final i in r.ingredients) {
         expect(
           foods.containsKey(i.foodId),
@@ -67,7 +72,7 @@ void main() {
   });
 
   test('il piano copre la settimana entro il 10% delle kcal', () {
-    final planner = MealPlanner(foods: foods, recipes: seedRecipes);
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
     for (final meals in [3, 4, 5]) {
       final result = planner.generate(
         weekStart: monday,
@@ -96,7 +101,7 @@ void main() {
   });
 
   test('meal prep: stessa ricetta nel blocco, ricette diverse tra blocchi', () {
-    final planner = MealPlanner(foods: foods, recipes: seedRecipes);
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
     final plan = planner
         .generate(
           weekStart: monday,
@@ -119,7 +124,7 @@ void main() {
   });
 
   test('stesso seed, stesso piano', () {
-    final planner = MealPlanner(foods: foods, recipes: seedRecipes);
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
     List<String> ids(int seed) => planner
         .generate(
           weekStart: monday,
@@ -135,8 +140,8 @@ void main() {
   });
 
   test('le ricette escluse non compaiono', () {
-    final planner = MealPlanner(foods: foods, recipes: seedRecipes);
-    final excluded = seedRecipes
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+    final excluded = dbRecipes
         .where((r) => r.mainProtein == 'pesce')
         .map((r) => r.id)
         .toSet();
@@ -153,7 +158,7 @@ void main() {
   });
 
   test('lista della spesa: somma corretta e raggruppata per reparto', () {
-    final planner = MealPlanner(foods: foods, recipes: seedRecipes);
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
     final plan = planner
         .generate(
           weekStart: monday,
@@ -192,5 +197,67 @@ void main() {
     expect(rice.quantityLabel, '1.3 kg → 2 conf. da 1 kg');
     final zucchine = ShoppingItem(foods['f_zucchine']!, 523);
     expect(zucchine.quantityLabel, '530 g');
+  });
+
+  test('database: 1000 ricette complete con id unici', () {
+    expect(dbRecipes, hasLength(1000));
+    expect(recipes, hasLength(dbRecipes.length));
+    for (final t in MealType.values) {
+      expect(dbRecipes.where((r) => r.type == t), isNotEmpty);
+    }
+    for (final r in dbRecipes) {
+      expect(r.instructions, isNotEmpty, reason: r.id);
+      expect(r.ingredients, isNotEmpty, reason: r.id);
+      expect(r.mainProtein, isNotEmpty, reason: r.id);
+      expect(r.macrosPerServing(foods).kcal, greaterThan(50), reason: r.id);
+    }
+  });
+
+  test('stagionalità: grammi di stagione e fuori stagione', () {
+    const r = Recipe(
+      id: 'x',
+      name: 'Test',
+      type: MealType.main,
+      ingredients: [
+        Ingredient('f_zucca', 200),
+        Ingredient('f_zucchine', 100),
+        Ingredient('f_riso', 80),
+      ],
+    );
+    final nov = [DateTime(2026, 11, 10)];
+    final g = r.seasonGrams(foods, nov);
+    expect(g.inSeason, 200);
+    expect(g.outOfSeason, 100);
+    expect(r.isInSeason(foods, nov), isFalse);
+    expect(r.isInSeason(foods, [DateTime(2026, 9, 10)]), isTrue);
+  });
+
+  test('il menu privilegia ingredienti di stagione', () {
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+    for (final start in [DateTime(2026, 1, 12), DateTime(2026, 7, 6), monday]) {
+      final days = energyFor(start);
+      final dates = days.map((d) => d.date).toList();
+      for (final seed in [1, 2, 3]) {
+        final plan = planner
+            .generate(
+              weekStart: start,
+              days: days,
+              mealsPerDay: 5,
+              options: MealPlanOptions(seed: seed),
+            )
+            .plan;
+        final used = {
+          for (final d in plan.days)
+            for (final m in d.meals) m.recipeId,
+        };
+        for (final id in used) {
+          expect(
+            recipes[id]!.isInSeason(foods, dates),
+            isTrue,
+            reason: '$id nella settimana del $start',
+          );
+        }
+      }
+    }
   });
 }
