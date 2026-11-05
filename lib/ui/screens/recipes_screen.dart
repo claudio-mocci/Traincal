@@ -22,6 +22,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
   String _query = '';
   bool _seasonOnly = false;
   bool _pinnedOnly = false;
+  bool _mineOnly = false;
   final Set<String> _tags = {};
 
   @override
@@ -37,6 +38,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
         .where(
           (r) => !_pinnedOnly || s.mealPrepPrefs.pinnedRecipeIds.contains(r.id),
         )
+        .where((r) => !_mineOnly || r.source == RecipeSource.user)
         .toList();
 
     final header = [
@@ -78,6 +80,13 @@ class _RecipesScreenState extends State<RecipesScreen> {
           spacing: 8,
           runSpacing: 4,
           children: [
+            FilterChip(
+              avatar: const Icon(Icons.person_outline, size: 18),
+              label: const Text('Mie ricette'),
+              tooltip: 'Ricette create o modificate da te',
+              selected: _mineOnly,
+              onSelected: (v) => setState(() => _mineOnly = v),
+            ),
             FilterChip(
               avatar: const Icon(Icons.eco_outlined, size: 18),
               label: const Text('Di stagione'),

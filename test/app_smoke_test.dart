@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:traincal/data/local_store.dart';
 import 'package:traincal/main.dart';
 import 'package:traincal/models/nutrition_plan.dart';
+import 'package:traincal/models/recipe.dart';
 import 'package:traincal/models/workout.dart';
 import 'package:traincal/state/app_state.dart';
 import 'package:traincal/ui/screens/settings_screen.dart';
@@ -88,10 +89,29 @@ void main() {
 
       await tester.tap(find.text('Ricette').last);
       await tester.pumpAndSettle();
+      // Filtro "Mie ricette": solo quelle create dall'utente.
+      state.saveRecipe(
+        const Recipe(
+          id: 'r_mia',
+          name: 'Insalata della casa',
+          type: MealType.main,
+          ingredients: [Ingredient('f_pollo', 150), Ingredient('f_riso', 80)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mie ricette'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 ricette'), findsOneWidget);
+      expect(find.text('Insalata della casa'), findsOneWidget);
+      await tester.tap(find.text('Mie ricette'));
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextField, 'Cerca ricetta'),
         'banana e burro',
       );
+      await tester.pumpAndSettle();
+      // Su schermi stretti i filtri occupano spazio: si scorre la lista.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
       await tester.pumpAndSettle();
       await tester.tap(find.text("Banana e burro d'arachidi"));
       await tester.pumpAndSettle();
