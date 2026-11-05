@@ -49,15 +49,22 @@ class ExtraFood {
 
 class DayMealPlan {
   final DateTime date;
+
+  /// Fabbisogno dell'intera giornata, pasti liberi compresi.
   final Macros target;
   final List<MealEntry> meals;
   final List<ExtraFood> extras;
+
+  /// Pasti fuori dal meal prep (es. cena fuori): mantengono la loro quota del
+  /// fabbisogno, ma senza ricetta, preparazione né spesa.
+  final List<MealSlot> freeSlots;
 
   const DayMealPlan({
     required this.date,
     required this.target,
     required this.meals,
     this.extras = const [],
+    this.freeSlots = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -65,6 +72,8 @@ class DayMealPlan {
     'target': target.toJson(),
     'meals': meals.map((e) => e.toJson()).toList(),
     'extras': extras.map((e) => e.toJson()).toList(),
+    if (freeSlots.isNotEmpty)
+      'freeSlots': freeSlots.map((s) => s.name).toList(),
   };
 
   factory DayMealPlan.fromJson(Map<String, dynamic> j) => DayMealPlan(
@@ -75,6 +84,9 @@ class DayMealPlan {
         .toList(),
     extras: (j['extras'] as List? ?? const [])
         .map((e) => ExtraFood.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    freeSlots: ((j['freeSlots'] as List?) ?? const [])
+        .map((s) => MealSlot.values.byName(s as String))
         .toList(),
   );
 }

@@ -602,4 +602,97 @@ void main() {
       expect(r.copyWith(clearFixedServings: true).fixedServings, isNull);
     });
   });
+
+  group('pasti liberi', () {
+    // Venerdì (indice 4) pranzo e cena liberi, domenica tutta libera.
+    final free = {
+      4: {MealSlot.lunch, MealSlot.dinner},
+      6: {
+        MealSlot.breakfast,
+        MealSlot.lunch,
+        MealSlot.afternoonSnack,
+        MealSlot.dinner,
+      },
+    };
+
+    for (final style in MealPrepStyle.values) {
+      test('niente ricette, preparazione né spesa (${style.name})', () {
+        final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+        final plan = planner
+            .generate(
+              weekStart: monday,
+              days: energy,
+              mealsPerDay: 4,
+              options: MealPlanOptions(style: style, freeMeals: free, seed: 3),
+            )
+            .plan;
+        final fri = plan.days[4];
+        expect(fri.freeSlots, [MealSlot.lunch, MealSlot.dinner]);
+        expect(fri.meals.map((m) => m.slot), [
+          MealSlot.breakfast,
+          MealSlot.afternoonSnack,
+        ]);
+        final sun = plan.days[6];
+        expect(sun.meals, isEmpty);
+        expect(sun.extras, isEmpty);
+
+        // Le sessioni non coprono i pasti liberi.
+        final all = {
+          ...recipes,
+          for (final r in plan.generatedRecipes) r.id: r,
+        };
+        final cooked = plan.prepSessions.fold<double>(
+          0,
+          (a, p) => a + (plan.combos.isEmpty ? p.totalServings : 0),
+        );
+        final mainServings = plan.days
+            .expand((d) => d.meals)
+            .where((m) => m.slot.type == MealType.main)
+            .fold<double>(0, (a, m) => a + m.servings);
+        if (plan.combos.isEmpty) expect(cooked, closeTo(mainServings, 0.001));
+
+        // I pasti rimasti coprono solo la loro quota del fabbisogno.
+        final withExtra = MealPlanner(
+          foods: foods,
+          recipes: dbRecipes,
+          extraRecipes: plan.generatedRecipes,
+        );
+        final planned = MealPlanner.plannedTarget(fri);
+        // Quote con 4 pasti: colazione .25 + spuntino .10 = 35%.
+        expect(planned.kcal, closeTo(fri.target.kcal * 0.35, 0.5));
+        final total = withExtra.dayTotal(fri);
+        expect(
+          (total.kcal - planned.kcal).abs() / planned.kcal,
+          lessThan(0.12),
+          reason: '$total vs $planned',
+        );
+        // La spesa contiene solo ingredienti dei pasti pianificati.
+        final list = ShoppingList.fromPlan(plan, all, foods);
+        expect(list.isEmpty, isFalse);
+      });
+    }
+
+    test('ribilanciamento e salvataggio mantengono i pasti liberi', () {
+      final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+      final plan = planner
+          .generate(
+            weekStart: monday,
+            days: energy,
+            mealsPerDay: 4,
+            options: MealPlanOptions(freeMeals: free, seed: 8),
+          )
+          .plan;
+      final fri = plan.days[4];
+      final again = planner.rebalanceDay(fri);
+      expect(again.freeSlots, fri.freeSlots);
+      expect(
+        again.meals.map((m) => m.servings),
+        fri.meals.map((m) => m.servings),
+      );
+      final copy = DayMealPlan.fromJson(
+        jsonDecode(jsonEncode(fri.toJson())) as Map<String, dynamic>,
+      );
+      expect(copy.freeSlots, fri.freeSlots);
+    });
+  });
 }

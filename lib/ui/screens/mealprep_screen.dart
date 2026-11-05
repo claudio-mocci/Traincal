@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/food.dart';
 import '../../models/meal_plan.dart';
 import '../../models/recipe.dart';
+import '../../services/meal_planner.dart';
 import '../../services/shopping_list.dart';
 import '../../state/app_state.dart';
 import '../theme.dart';
@@ -108,11 +109,17 @@ class _PlanHeader extends StatelessWidget {
     final s = context.watch<AppState>();
     final p = s.mealPrepPrefs;
     final theme = Theme.of(context);
+    final freeCount = s
+        .freeMealsFor(s.selectedWeek)
+        .values
+        .fold<int>(0, (a, v) => a + v.length);
     final summary = [
       p.style.shortLabel,
       '${p.prepSessions} ${p.prepSessions == 1 ? 'sessione' : 'sessioni'}',
       if (p.style == MealPrepStyle.recipes) '${p.mainVariety} ricette/sessione',
       if (p.pinnedRecipeIds.isNotEmpty) '${p.pinnedRecipeIds.length} fisse',
+      if (freeCount > 0)
+        '$freeCount ${freeCount == 1 ? 'pasto libero' : 'pasti liberi'}',
     ].join(' · ');
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
@@ -321,6 +328,18 @@ class _OptionsSheet extends StatelessWidget {
               4,
               (v) => s.saveMealPrepPrefs(p.copyWith(snackVariety: v)),
             ),
+            const SizedBox(height: 16),
+            Text('Pasti da preparare', style: theme.textTheme.labelLarge),
+            Text(
+              'Togli la spunta ai pasti liberi (es. cena fuori): non avranno '
+              'ricetta, preparazione né spesa, ma la loro quota di calorie '
+              'resta riservata.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const _FreeMealsGrid(),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -336,6 +355,75 @@ class _OptionsSheet extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Griglia giorni × pasti della settimana selezionata: spuntato = pasto
+/// preparato con il meal prep, vuoto = pasto libero.
+class _FreeMealsGrid extends StatelessWidget {
+  const _FreeMealsGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final theme = Theme.of(context);
+    final slots = MealSlot.values
+        .where(MealPlanner.slotShares(s.profile.mealsPerDay).containsKey)
+        .toList();
+    final free = s.freeMealsFor(s.selectedWeek);
+    final days = s.weekDays;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            const SizedBox(width: 72),
+            for (final slot in slots)
+              Expanded(
+                child: Tooltip(
+                  message: slot.label,
+                  child: Icon(
+                    _MenuTabState._slotIcon(slot),
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        for (var d = 0; d < days.length; d++)
+          Row(
+            children: [
+              SizedBox(
+                width: 72,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    alignment: Alignment.centerLeft,
+                  ),
+                  onPressed: () {
+                    final allFree = slots.every(
+                      (slot) => free[d]?.contains(slot) ?? false,
+                    );
+                    s.setFreeMeals(d, slots, !allFree);
+                  },
+                  child: Text(
+                    dayFmt.format(days[d]).split(' ').take(2).join(' '),
+                    style: theme.textTheme.labelLarge,
+                  ),
+                ),
+              ),
+              for (final slot in slots)
+                Expanded(
+                  child: Checkbox(
+                    value: !(free[d]?.contains(slot) ?? false),
+                    onChanged: (v) => s.setFreeMeals(d, [slot], v == false),
+                  ),
+                ),
+            ],
+          ),
+      ],
     );
   }
 }
@@ -413,6 +501,12 @@ class _MenuTabState extends State<_MenuTab> {
     final c = context.colors;
     final d = plan.days[_day.clamp(0, plan.days.length - 1)];
     final total = planner.dayTotal(d);
+    final planned = MealPlanner.plannedTarget(d);
+    final shares = MealPlanner.slotShares(d.meals.length + d.freeSlots.length);
+    final shareSum = shares.values.fold<double>(0, (a, b) => a + b);
+    double freeKcal(MealSlot slot) =>
+        shareSum == 0 ? 0 : d.target.kcal * (shares[slot] ?? 0) / shareSum;
+    final mealBySlot = {for (final m in d.meals) m.slot: m};
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -434,7 +528,7 @@ class _MenuTabState extends State<_MenuTab> {
                       child: MacroBar(
                         label: 'Kcal',
                         value: total.kcal,
-                        target: d.target.kcal,
+                        target: planned.kcal,
                         color: c.kcal,
                         unit: '',
                       ),
@@ -444,7 +538,7 @@ class _MenuTabState extends State<_MenuTab> {
                       child: MacroBar(
                         label: 'Proteine',
                         value: total.protein,
-                        target: d.target.protein,
+                        target: planned.protein,
                         color: c.protein,
                       ),
                     ),
@@ -457,7 +551,7 @@ class _MenuTabState extends State<_MenuTab> {
                       child: MacroBar(
                         label: 'Carboidrati',
                         value: total.carbs,
-                        target: d.target.carbs,
+                        target: planned.carbs,
                         color: c.carbs,
                       ),
                     ),
@@ -466,7 +560,7 @@ class _MenuTabState extends State<_MenuTab> {
                       child: MacroBar(
                         label: 'Grassi',
                         value: total.fat,
-                        target: d.target.fat,
+                        target: planned.fat,
                         color: c.fat,
                       ),
                     ),
@@ -476,44 +570,41 @@ class _MenuTabState extends State<_MenuTab> {
             ),
           ),
         ),
-        for (final m in d.meals)
-          if (recipes[m.recipeId] case final r?) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
-              child: Row(
-                children: [
-                  Icon(
-                    _slotIcon(m.slot),
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      m.slot.label,
-                      style: theme.textTheme.titleSmall,
-                    ),
-                  ),
-                  Text(
-                    '${(r.macrosPerServing(s.foods).kcal * m.servings).round()} kcal',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+        if (d.freeSlots.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              'Le barre si riferiscono ai pasti del menu: '
+              '~${(d.target.kcal - planned.kcal).round()} kcal restano per '
+              '${d.freeSlots.length == 1 ? 'il pasto libero' : 'i pasti liberi'}.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            _MealCard(
-              meal: m,
-              recipe: r,
-              onServings: () => showDialog(
-                context: context,
-                builder: (_) =>
-                    _ServingsDialog(date: d.date, meal: m, recipe: r),
+          ),
+        for (final slot in MealSlot.values)
+          if (d.freeSlots.contains(slot)) ...[
+            _slotHeader(context, slot, '~${freeKcal(slot).round()} kcal'),
+            _FreeMealCard(kcal: freeKcal(slot)),
+          ] else if (mealBySlot[slot] case final m?)
+            if (recipes[m.recipeId] case final r?) ...[
+              _slotHeader(
+                context,
+                slot,
+                '${(r.macrosPerServing(s.foods).kcal * m.servings).round()} kcal',
               ),
-              onSwap: () => _swap(context, r),
-            ),
-          ],
+              _MealCard(
+                meal: m,
+                recipe: r,
+                onServings: () => showDialog(
+                  context: context,
+                  builder: (_) =>
+                      _ServingsDialog(date: d.date, meal: m, recipe: r),
+                ),
+                onSwap: () => _swap(context, r),
+                onFree: () => s.makeMealFree(d.date, slot),
+              ),
+            ],
         if (d.extras.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
@@ -546,6 +637,26 @@ class _MenuTabState extends State<_MenuTab> {
     );
   }
 
+  Widget _slotHeader(BuildContext context, MealSlot slot, String trailing) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+      child: Row(
+        children: [
+          Icon(_slotIcon(slot), size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(child: Text(slot.label, style: theme.textTheme.titleSmall)),
+          Text(
+            trailing,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _swap(BuildContext context, Recipe current) async {
     final s = context.read<AppState>();
     final picked = await showDialog<Recipe>(
@@ -556,17 +667,72 @@ class _MenuTabState extends State<_MenuTab> {
   }
 }
 
+/// Pasto fuori dal meal prep: mostra quante kcal restano a disposizione.
+class _FreeMealCard extends StatelessWidget {
+  final double kcal;
+  const _FreeMealCard({required this.kcal});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: c.subtle,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              Icons.no_meals_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Pasto libero', style: theme.textTheme.titleSmall),
+                const SizedBox(height: 2),
+                Text(
+                  'Fuori dal meal prep: hai circa ${kcal.round()} kcal a '
+                  'disposizione. Per ripianificarlo usa le Opzioni del menu.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MealCard extends StatelessWidget {
   final MealEntry meal;
   final Recipe recipe;
   final VoidCallback onServings;
   final VoidCallback onSwap;
+  final VoidCallback onFree;
 
   const _MealCard({
     required this.meal,
     required this.recipe,
     required this.onServings,
     required this.onSwap,
+    required this.onFree,
   });
 
   @override
@@ -638,11 +804,26 @@ class _MealCard extends StatelessWidget {
                     ),
                     onPressed: onServings,
                   ),
-                  IconButton(
-                    tooltip: 'Sostituisci in tutta la settimana',
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.swap_horiz_rounded),
-                    onPressed: onSwap,
+                  PopupMenuButton<VoidCallback>(
+                    tooltip: 'Altre azioni',
+                    icon: const Icon(Icons.more_vert_rounded),
+                    onSelected: (action) => action(),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: onSwap,
+                        child: const ListTile(
+                          leading: Icon(Icons.swap_horiz_rounded),
+                          title: Text('Sostituisci in tutta la settimana'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: onFree,
+                        child: const ListTile(
+                          leading: Icon(Icons.no_meals_rounded),
+                          title: Text('Rendi pasto libero'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

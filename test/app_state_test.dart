@@ -199,4 +199,54 @@ void main() {
       expect(s.intervalsConfigured, isFalse);
     });
   });
+
+  test(
+    'pasti liberi: per settimana, sincronizzati e applicati al menu',
+    () async {
+      final s = await newState();
+      // Venerdì pranzo e cena liberi.
+      s.setFreeMeals(4, [MealSlot.lunch, MealSlot.dinner], true);
+      expect(s.freeMealsFor(s.selectedWeek), {
+        4: {MealSlot.lunch, MealSlot.dinner},
+      });
+      expect(
+        s.store.dirtyRecords().map((r) => r.collection),
+        contains(Collections.prefs),
+      );
+      // Un'altra settimana non ne è toccata.
+      expect(
+        s.freeMealsFor(s.selectedWeek.add(const Duration(days: 7))),
+        isEmpty,
+      );
+
+      s.generateMealPlan(seed: 4);
+      final fri = s.weekMealPlan!.days[4];
+      expect(fri.freeSlots, [MealSlot.lunch, MealSlot.dinner]);
+
+      // Dal menu: rende libera anche la cena di lunedì.
+      final monDinner = s.weekMealPlan!.days[0].meals
+          .firstWhere((m) => m.slot == MealSlot.dinner)
+          .recipeId;
+      s.makeMealFree(s.weekMealPlan!.days[0].date, MealSlot.dinner);
+      final mon = s.weekMealPlan!.days[0];
+      expect(mon.freeSlots, [MealSlot.dinner]);
+      expect(mon.meals.where((m) => m.slot == MealSlot.dinner), isEmpty);
+      expect(s.freeMealsFor(s.selectedWeek)[0], {MealSlot.dinner});
+      // La preparazione non conta più quella porzione.
+      final cooked = s.weekMealPlan!.prepSessions
+          .where((p) => p.recipeId == monDinner)
+          .fold<double>(0, (a, p) => a + p.totalServings);
+      final eaten = s.weekMealPlan!.days
+          .expand((d) => d.meals)
+          .where((m) => m.recipeId == monDinner)
+          .fold<double>(0, (a, m) => a + m.servings);
+      expect(cooked, closeTo(eaten, 0.001));
+
+      // Togliendo il pasto libero e rigenerando torna pianificato.
+      s.setFreeMeals(4, [MealSlot.lunch, MealSlot.dinner], false);
+      s.setFreeMeals(0, [MealSlot.dinner], false);
+      s.generateMealPlan(seed: 4);
+      expect(s.weekMealPlan!.days.every((d) => d.freeSlots.isEmpty), isTrue);
+    },
+  );
 }

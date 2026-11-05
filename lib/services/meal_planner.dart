@@ -22,6 +22,10 @@ class MealPlanOptions {
 
   /// Colazioni e spuntini fissi: entrano sempre nella rotazione.
   final Set<String> pinnedRecipeIds;
+
+  /// Pasti liberi per giorno (indice nella settimana): niente ricetta, ma la
+  /// loro quota di fabbisogno resta riservata.
+  final Map<int, Set<MealSlot>> freeMeals;
   final int seed;
 
   /// Peso della stagionalità nella scelta delle ricette: 0 la ignora, 0.6
@@ -36,6 +40,7 @@ class MealPlanOptions {
     this.snackVariety = 2,
     this.excludedRecipeIds = const {},
     this.pinnedRecipeIds = const {},
+    this.freeMeals = const {},
     this.seed = 0,
     this.seasonWeight = 0.6,
   });
@@ -131,6 +136,8 @@ class MealPlanner {
     final rnd = Random(options.seed);
     final warnings = <String>[];
     final shares = slotShares(mealsPerDay);
+    bool isFree(int day, MealSlot slot) =>
+        options.freeMeals[day]?.contains(slot) ?? false;
     final available = recipes
         .where((r) => !options.excludedRecipeIds.contains(r.id))
         .where((r) => _perServing(r).kcal > 50)
@@ -208,8 +215,11 @@ class MealPlanner {
     for (final block in blocks) {
       final meals = [
         for (final d in block)
-          for (final slot in mainSlots) (day: d - block.first, slot: slot),
+          for (final slot in mainSlots)
+            if (!isFree(d, slot)) (day: d - block.first, slot: slot),
       ];
+      // Blocco tutto libero: niente da cucinare.
+      if (meals.isEmpty) continue;
       final when = [for (final d in block) dayDates[d]];
 
       if (options.style == MealPrepStyle.components) {
@@ -334,6 +344,7 @@ class MealPlanner {
       }
       for (var d = 0; d < days.length; d++) {
         for (var s = 0; s < slots.length; s++) {
+          if (isFree(d, slots[s])) continue;
           assignments[d][slots[s]] = chosen[(d + s) % chosen.length];
         }
       }
@@ -346,7 +357,16 @@ class MealPlanner {
     final dayPlans = <DayMealPlan>[];
     for (var d = 0; d < days.length; d++) {
       dayPlans.add(
-        _buildDay(days[d].date, days[d].target, assignments[d], shares),
+        _buildDay(
+          days[d].date,
+          days[d].target,
+          assignments[d],
+          shares,
+          free: {
+            for (final slot in shares.keys)
+              if (isFree(d, slot)) slot,
+          },
+        ),
       );
     }
 
@@ -578,9 +598,20 @@ class MealPlanner {
       day.date,
       day.target,
       assigned,
-      slotShares(day.meals.length),
+      slotShares(day.meals.length + day.freeSlots.length),
       locked: locked,
+      free: day.freeSlots.toSet(),
     );
+  }
+
+  /// Quota del fabbisogno del giorno coperta dal menu: il target meno la
+  /// parte riservata ai pasti liberi.
+  static Macros plannedTarget(DayMealPlan day) {
+    if (day.freeSlots.isEmpty) return day.target;
+    final shares = slotShares(day.meals.length + day.freeSlots.length);
+    final all = shares.values.fold<double>(0, (a, b) => a + b);
+    final free = day.freeSlots.fold<double>(0, (a, s) => a + (shares[s] ?? 0));
+    return day.target.scale(all == 0 ? 0 : (all - free) / all);
   }
 
   DayMealPlan _buildDay(
@@ -589,7 +620,15 @@ class MealPlanner {
     Map<MealSlot, Recipe> assigned,
     Map<MealSlot, double> shares, {
     Map<MealSlot, double> locked = const {},
+    Set<MealSlot> free = const {},
   }) {
+    final dayTarget = target;
+    // I pasti liberi tengono la loro quota: il menu copre solo il resto.
+    if (free.isNotEmpty) {
+      final all = shares.values.fold<double>(0, (a, b) => a + b);
+      final freeShare = free.fold<double>(0, (a, s) => a + (shares[s] ?? 0));
+      target = target.scale(all == 0 ? 0 : (all - freeShare) / all);
+    }
     // Porzioni che non si adattano: scelte a mano o fisse per ricetta.
     final fixed = <MealSlot, double>{
       for (final e in assigned.entries)
@@ -599,6 +638,19 @@ class MealPlanner {
     final orderedSlots = MealSlot.values
         .where((s) => assigned.containsKey(s))
         .toList();
+    final freeSlots = [
+      for (final slot in MealSlot.values)
+        if (free.contains(slot)) slot,
+    ];
+    // Giornata tutta libera: nessun pasto e nessuna integrazione.
+    if (orderedSlots.isEmpty) {
+      return DayMealPlan(
+        date: date,
+        target: dayTarget,
+        meals: const [],
+        freeSlots: freeSlots,
+      );
+    }
     final extras = <ExtraFood>[];
 
     Macros total(List<MealEntry> ms) {
@@ -683,9 +735,10 @@ class MealPlanner {
 
     return DayMealPlan(
       date: date,
-      target: target,
+      target: dayTarget,
       meals: meals,
       extras: extras,
+      freeSlots: freeSlots,
     );
   }
 

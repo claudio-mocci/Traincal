@@ -738,12 +738,82 @@ class AppState extends ChangeNotifier {
         snackVariety: mealPrepPrefs.snackVariety,
         excludedRecipeIds: mealPrepPrefs.excludedRecipeIds,
         pinnedRecipeIds: mealPrepPrefs.pinnedRecipeIds,
+        freeMeals: freeMealsFor(selectedWeek),
         seed: seed ?? DateTime.now().millisecondsSinceEpoch,
       ),
     );
     _mealPlans[result.plan.id] = result.plan;
     mealPlanWarnings = result.warnings;
     store.put(Collections.mealPlans, result.plan.id, result.plan.toJson());
+    _changed();
+  }
+
+  // --- Pasti liberi -------------------------------------------------------
+
+  static const _freeMealsId = 'freemeals';
+
+  static String _weekId(DateTime week) =>
+      mondayOf(week).toIso8601String().substring(0, 10);
+
+  /// Pasti liberi della settimana: indice del giorno (0 = lunedì) → pasti.
+  Map<int, Set<MealSlot>> freeMealsFor(DateTime week) {
+    final all = store.get(Collections.prefs, _freeMealsId) ?? const {};
+    final list = (all[_weekId(week)] as List?) ?? const [];
+    final out = <int, Set<MealSlot>>{};
+    for (final e in list.cast<String>()) {
+      final [day, slot] = e.split(':');
+      final s = MealSlot.values.asNameMap()[slot];
+      if (s != null) out.putIfAbsent(int.parse(day), () => {}).add(s);
+    }
+    return out;
+  }
+
+  /// Segna (o toglie) pasti liberi per la settimana selezionata. Vale per la
+  /// prossima generazione del menu.
+  void setFreeMeals(int day, Iterable<MealSlot> slots, bool free) {
+    final all = {...?store.get(Collections.prefs, _freeMealsId)};
+    final id = _weekId(selectedWeek);
+    final set = {...((all[id] as List?) ?? const []).cast<String>()};
+    for (final slot in slots) {
+      final key = '$day:${slot.name}';
+      free ? set.add(key) : set.remove(key);
+    }
+    if (set.isEmpty) {
+      all.remove(id);
+    } else {
+      all[id] = (set.toList()..sort());
+    }
+    store.put(Collections.prefs, _freeMealsId, all);
+    _changed();
+  }
+
+  /// Rende libero un pasto del menu già generato: sparisce dalla
+  /// preparazione e dalla spesa, gli altri pasti del giorno non cambiano
+  /// quota. La scelta resta anche per le prossime rigenerazioni.
+  void makeMealFree(DateTime date, MealSlot slot) {
+    final plan = weekMealPlan;
+    if (plan == null) return;
+    final p = planner;
+    final days = [
+      for (final d in plan.days)
+        if (d.date != date)
+          d
+        else
+          p.rebalanceDay(
+            DayMealPlan(
+              date: d.date,
+              target: d.target,
+              meals: [
+                for (final m in d.meals)
+                  if (m.slot != slot) m,
+              ],
+              freeSlots: [...d.freeSlots, slot],
+            ),
+          ),
+    ];
+    final index = plan.days.indexWhere((d) => d.date == date);
+    if (index >= 0) setFreeMeals(index, [slot], true);
+    _savePlanDays(plan, days);
     _changed();
   }
 
@@ -763,6 +833,7 @@ class AppState extends ChangeNotifier {
               date: d.date,
               target: d.target,
               extras: d.extras,
+              freeSlots: d.freeSlots,
               meals: [
                 for (final m in d.meals)
                   m.slot != slot
@@ -813,6 +884,7 @@ class AppState extends ChangeNotifier {
           date: d.date,
           target: d.target,
           extras: d.extras,
+          freeSlots: d.freeSlots,
           meals: [
             for (final m in d.meals)
               m.recipeId == fromId
