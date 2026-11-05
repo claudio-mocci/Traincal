@@ -50,11 +50,14 @@ class _WeekScreenState extends State<WeekScreen> {
         _DayHero(selected, plan: s.activePlan),
         if (!s.intervalsConfigured) ...[
           const SizedBox(height: 12),
-          const _Notice(
-            icon: Icons.link_rounded,
-            text:
-                'Collega intervals.icu (icona impostazioni in alto) per '
-                'importare gli allenamenti pianificati e svolti.',
+          _Notice(
+            icon: s.loggedIn ? Icons.link_rounded : Icons.lock_outline_rounded,
+            text: s.loggedIn
+                ? 'Collega intervals.icu (icona impostazioni in alto) per '
+                      'importare gli allenamenti pianificati e svolti.'
+                : 'Accedi al tuo account (icona impostazioni in alto) per '
+                      'collegare intervals.icu: senza allenamenti i target '
+                      'sono calcolati come giorni di riposo.',
           ),
         ],
         _SectionHeader('Allenamenti'),

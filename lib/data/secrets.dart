@@ -57,10 +57,13 @@ class Secrets {
     }
     if (!usingFallback) {
       try {
+        // Un portachiavi bloccato può restare in attesa (es. richiesta di
+        // sblocco): oltre il limite si ripiega sul database locale.
+        const limit = Duration(seconds: 5);
         if (v == null) {
-          await _secure.delete(key: key);
+          await _secure.delete(key: key).timeout(limit);
         } else {
-          await _secure.write(key: key, value: v);
+          await _secure.write(key: key, value: v).timeout(limit);
         }
         _fallback.setKv('secret:$key', null);
         return;

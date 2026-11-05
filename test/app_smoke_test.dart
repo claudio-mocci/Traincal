@@ -42,7 +42,7 @@ void main() {
       ).toJson(),
     );
     final state = AppState();
-    await state.init(testStore: store, db: testDb);
+    await state.init(testStore: store, db: testDb, testUserId: 'utente-test');
     state.savePlan(state.newPlan(Goal.cut).copyWith(active: true));
     await tester.pumpWidget(
       ChangeNotifierProvider.value(value: state, child: const TraincalApp()),
@@ -129,4 +129,36 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('senza login: niente allenamenti, menu e API key', (
+    tester,
+  ) async {
+    final state = AppState();
+    // init da scollegati cancella la chiave dal portachiavi: in tempo reale,
+    // perché il plugin non risponde nel tempo simulato dei widget test.
+    await tester.runAsync(
+      () => state.init(testStore: LocalStore.inMemory(), db: testDb),
+    );
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(value: state, child: const TraincalApp()),
+    );
+    await tester.pumpAndSettle();
+    expect(state.loggedIn, isFalse);
+
+    await tester.tap(find.text('Allenamenti').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('accedi per vederli'), findsOneWidget);
+
+    await tester.tap(find.text('Meal prep').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Genera menu'), findsNothing);
+    expect(find.textContaining('accedi per'), findsOneWidget);
+
+    await tester.tap(find.text('Accedi'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.textContaining('accedi per collegare'), findsOneWidget);
+    expect(find.text('API key'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

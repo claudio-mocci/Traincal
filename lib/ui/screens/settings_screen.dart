@@ -23,6 +23,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _sbKey;
   final _email = TextEditingController();
   final _password = TextEditingController();
+  String? _shownKey;
 
   @override
   void initState() {
@@ -60,12 +61,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final theme = Theme.of(context);
     final user = s.cloud.user;
-    // La chiave può arrivare dalla sincronizzazione con la schermata aperta.
-    final syncedKey = s.secrets[Secrets.intervalsApiKey] ?? '';
-    if (_icuKey.text.isEmpty && syncedKey.isNotEmpty) {
-      _icuKey.text = syncedKey;
-      _icuAthlete.text = s.secrets[Secrets.intervalsAthleteId] ?? '0';
+    final key = s.secrets[Secrets.intervalsApiKey] ?? '';
+    // Allinea i campi alla chiave attuale (può arrivare dall'account o
+    // sparire al logout con la schermata aperta), dopo il frame.
+    final wantKey = s.loggedIn ? key : '';
+    if (_shownKey != wantKey) {
+      _shownKey = wantKey;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _icuKey.text = wantKey;
+        _icuAthlete.text = s.loggedIn
+            ? s.secrets[Secrets.intervalsAthleteId] ?? '0'
+            : '0';
+      });
     }
     Widget secret(TextEditingController c, String label, {String? help}) =>
         TextField(
@@ -73,6 +83,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           obscureText: true,
           decoration: InputDecoration(labelText: label, helperText: help),
         );
+    Widget title(String t) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(t, style: theme.textTheme.titleMedium),
+    );
+    Widget note(IconData icon, String text) => Row(
+      children: [
+        Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
+      ],
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Connessioni')),
@@ -82,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (s.secrets.usingFallback)
             Card(
               margin: const EdgeInsets.only(bottom: 16),
-              color: Theme.of(context).colorScheme.errorContainer,
+              color: theme.colorScheme.errorContainer,
               child: const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text(
@@ -92,100 +113,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
-          Text('intervals.icu', style: Theme.of(context).textTheme.titleMedium),
-          secret(
-            _icuKey,
-            'API key',
-            help: 'intervals.icu › Settings › Developer Settings',
-          ),
-          TextField(
-            controller: _icuAthlete,
-            decoration: const InputDecoration(
-              labelText: 'ID atleta',
-              helperText: '"0" = il proprietario della API key; es. i12345',
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(
-                user != null
-                    ? Icons.cloud_done_rounded
-                    : Icons.cloud_off_rounded,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  user != null
-                      ? 'La chiave si sincronizza sugli altri dispositivi '
-                            'collegati al tuo account.'
-                      : 'Accedi alla sincronizzazione (sotto) per non doverla '
-                            'inserire su ogni dispositivo.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: [
-              FilledButton(
-                onPressed: () async {
-                  await s.saveIntervalsSettings(_icuKey.text, _icuAthlete.text);
-                  if (!context.mounted) return;
-                  final msg = await guarded(context, s.testIntervals);
-                  if (msg != null && context.mounted) {
-                    showInfo(context, msg);
-                    s.syncAll();
-                  }
-                },
-                child: const Text('Salva e verifica'),
-              ),
-            ],
-          ),
-          const Divider(height: 40),
-          Text(
-            'Claude (generazione ricette)',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          secret(
-            _claudeKey,
-            'Anthropic API key',
-            help: 'platform.claude.com › API keys. Uso a consumo.',
-          ),
-          TextField(
-            controller: _claudeModel,
-            decoration: const InputDecoration(
-              labelText: 'Modello',
-              helperText: 'Default: claude-opus-5-5',
-            ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: () async {
-              await s.saveClaudeSettings(_claudeKey.text, _claudeModel.text);
-              if (context.mounted) {
-                showInfo(context, 'Impostazioni Claude salvate');
-              }
-            },
-            child: const Text('Salva'),
-          ),
-          const Divider(height: 40),
-          Text(
-            'Sincronizzazione (Supabase)',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (SupabaseConfig.isBuiltIn)
+
+          // --- Account ----------------------------------------------------
+          title('Account'),
+          if (!SupabaseConfig.isBuiltIn) ...[
             const Text(
-              'Sincronizza profilo, piani, ricette e menu tra i dispositivi. '
-              'Accedi con lo stesso account su ognuno.',
-            )
-          else ...[
-            const Text(
-              'Sincronizza profilo, piani, ricette e menu tra i dispositivi. '
               'Crea un progetto gratuito su supabase.com ed esegui lo script '
               'supabase/schema.sql nel SQL editor.',
             ),
@@ -208,63 +140,174 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               child: const Text('Salva'),
             ),
-          ],
-          if (s.cloud.isConfigured) ...[
             const SizedBox(height: 16),
-            if (user != null) ...[
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.cloud_done),
-                title: Text('Connesso come ${user.email}'),
+          ],
+          if (user != null)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.account_circle_rounded, size: 36),
+                title: Text(user.email ?? 'Account'),
                 subtitle: Text(
                   s.lastCloudSync == null
                       ? 'Mai sincronizzato'
                       : 'Ultima sync: ${timeFmt.format(s.lastCloudSync!)}',
                 ),
                 trailing: TextButton(
-                  onPressed: s.cloudSignOut,
+                  onPressed: () => _confirmSignOut(context, s),
                   child: const Text('Esci'),
                 ),
               ),
-            ] else ...[
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email'),
-              ),
-              TextField(
-                controller: _password,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password'),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilledButton(
-                    onPressed: () => guarded(
-                      context,
-                      () => s.cloudSignIn(_email.text.trim(), _password.text),
-                    ),
-                    child: const Text('Accedi'),
+            )
+          else if (s.cloud.isConfigured) ...[
+            const Text(
+              'Accedi per collegare intervals.icu, vedere gli allenamenti, '
+              'generare il menu e sincronizzare i dati tra i dispositivi.',
+            ),
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                FilledButton(
+                  onPressed: () => guarded(
+                    context,
+                    () => s.cloudSignIn(_email.text.trim(), _password.text),
                   ),
-                  OutlinedButton(
-                    onPressed: () => guarded(
-                      context,
-                      () => s.cloudSignIn(
-                        _email.text.trim(),
-                        _password.text,
-                        signUp: true,
-                      ),
+                  child: const Text('Accedi'),
+                ),
+                OutlinedButton(
+                  onPressed: () => guarded(
+                    context,
+                    () => s.cloudSignIn(
+                      _email.text.trim(),
+                      _password.text,
+                      signUp: true,
                     ),
-                    child: const Text('Registrati'),
                   ),
-                ],
-              ),
-            ],
+                  child: const Text('Registrati'),
+                ),
+              ],
+            ),
           ],
+          const Divider(height: 40),
+
+          // --- intervals.icu ----------------------------------------------
+          title('intervals.icu'),
+          if (!s.loggedIn)
+            note(
+              Icons.lock_outline_rounded,
+              'La API key è legata al tuo account: accedi per collegare '
+              'intervals.icu.',
+            )
+          else ...[
+            secret(
+              _icuKey,
+              'API key',
+              help: 'intervals.icu › Settings › Developer Settings',
+            ),
+            TextField(
+              controller: _icuAthlete,
+              decoration: const InputDecoration(
+                labelText: 'ID atleta',
+                helperText: '"0" = il proprietario della API key; es. i12345',
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () async {
+                final ok = await guarded(context, () async {
+                  await s.saveIntervalsSettings(_icuKey.text, _icuAthlete.text);
+                  return s.testIntervals();
+                });
+                if (ok != null && context.mounted) {
+                  showInfo(context, ok);
+                  s.syncAll();
+                }
+              },
+              child: const Text('Salva e verifica'),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Salva la chiave nel mio account'),
+              subtitle: Text(
+                s.intervalsKeyInAccount
+                    ? 'Gli altri dispositivi la ricevono quando accedi.'
+                    : 'Ora è solo su questo dispositivo. Attivalo per non '
+                          'doverla reinserire altrove.',
+              ),
+              value: s.intervalsKeyInAccount,
+              onChanged: key.isEmpty
+                  ? null
+                  : (v) =>
+                        guarded(context, () => s.setIntervalsKeyInAccount(v)),
+            ),
+          ],
+          const Divider(height: 40),
+
+          // --- Claude -----------------------------------------------------
+          title('Claude (generazione ricette)'),
+          secret(
+            _claudeKey,
+            'Anthropic API key',
+            help: 'platform.claude.com › API keys. Uso a consumo.',
+          ),
+          TextField(
+            controller: _claudeModel,
+            decoration: const InputDecoration(
+              labelText: 'Modello',
+              helperText: 'Default: claude-opus-5-5',
+            ),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: () async {
+              await s.saveClaudeSettings(_claudeKey.text, _claudeModel.text);
+              if (context.mounted) {
+                showInfo(context, 'Impostazioni Claude salvate');
+              }
+            },
+            child: const Text('Salva'),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmSignOut(BuildContext context, AppState s) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Uscire dall\'account?'),
+        content: const Text(
+          'Da questo dispositivo verranno rimossi la API key di intervals.icu, '
+          'gli allenamenti e i menu. I dati salvati nell\'account restano e '
+          'tornano al prossimo accesso.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Annulla'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Esci'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) {
+      await guarded(context, s.cloudSignOut);
+    }
   }
 }

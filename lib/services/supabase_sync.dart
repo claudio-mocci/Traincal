@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -17,6 +19,11 @@ class SupabaseSync {
   final LocalStore store;
   bool _initialized = false;
   String? _configuredUrl;
+  StreamSubscription<AuthState>? _authSub;
+
+  /// Chiamata quando cambia l'utente: login, logout, sessione scaduta o
+  /// revocata.
+  void Function(User? user)? onUserChanged;
 
   SupabaseSync(this.store);
 
@@ -29,16 +36,24 @@ class SupabaseSync {
   Future<void> configure(String? url, String? key) async {
     if (url == null || key == null) {
       if (_initialized) {
+        await _authSub?.cancel();
         await Supabase.instance.dispose();
         _initialized = false;
       }
       return;
     }
     if (_initialized && _configuredUrl == url) return;
-    if (_initialized) await Supabase.instance.dispose();
+    if (_initialized) {
+      await _authSub?.cancel();
+      await Supabase.instance.dispose();
+    }
     await Supabase.initialize(url: url, publishableKey: key);
     _initialized = true;
     _configuredUrl = url;
+    _authSub = _client.auth.onAuthStateChange.listen(
+      (s) => onUserChanged?.call(s.session?.user),
+      onError: (Object e) => debugPrint('Auth Supabase: $e'),
+    );
   }
 
   Future<void> signIn(String email, String password) async {
@@ -51,9 +66,16 @@ class SupabaseSync {
     await _client.auth.signUp(email: email, password: password);
   }
 
+  /// Esce dall'account. La sessione locale viene rimossa subito; l'avviso
+  /// al server può fallire (rete assente, risposta inattesa) senza impedire
+  /// l'uscita.
   Future<void> signOut() async {
-    await _client.auth.signOut();
     store.setKv(_cursorKey, null);
+    try {
+      await _client.auth.signOut().timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('Logout sul server non riuscito (uscita locale ok): $e');
+    }
   }
 
   /// Esegue pull + push. Ritorna il numero di record locali modificati.

@@ -9,6 +9,7 @@ import '../../services/shopping_list.dart';
 import '../../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/login_required.dart';
 import '../widgets/visuals.dart';
 import '../widgets/week_selector.dart';
 import 'recipes_screen.dart';
@@ -19,6 +20,12 @@ class MealPrepScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    if (!s.loggedIn) {
+      return const LoginRequired(
+        'Il menu della settimana è legato al tuo account: accedi per '
+        'generarlo e ritrovarlo su tutti i dispositivi.',
+      );
+    }
     final plan = s.weekMealPlan;
     final theme = Theme.of(context);
     return DefaultTabController(

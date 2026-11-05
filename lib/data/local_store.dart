@@ -113,6 +113,12 @@ class LocalStore {
     );
   }
 
+  /// Elimina fisicamente una collezione solo da questo dispositivo, senza
+  /// propagare la cancellazione al server (es. al logout).
+  void purge(String collection) {
+    _db.execute('DELETE FROM records WHERE collection = ?', [collection]);
+  }
+
   /// Sostituisce l'intera collezione (usato per la cache degli allenamenti).
   void replaceAll(String collection, Map<String, Map<String, dynamic>> docs) {
     _db.execute('BEGIN');

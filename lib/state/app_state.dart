@@ -121,8 +121,15 @@ class AppState extends ChangeNotifier {
 
   // --- Inizializzazione ---------------------------------------------------
 
-  Future<void> init({LocalStore? testStore, FoodDb? db}) async {
+  /// [testUserId] simula un utente collegato nei test (senza Supabase).
+  Future<void> init({
+    LocalStore? testStore,
+    FoodDb? db,
+    String? testUserId,
+  }) async {
     _db = db ?? await FoodDb.load();
+    _testMode = testStore != null;
+    _testUserId = testUserId;
     if (testStore != null) {
       store = testStore;
     } else {
@@ -134,16 +141,22 @@ class AppState extends ChangeNotifier {
     cloud = SupabaseSync(store);
     if (testStore == null) await secrets.load();
     _loadFromStore();
-    ready = true;
-    notifyListeners();
 
-    if (testStore == null) {
+    if (testStore != null) {
+      await _onUserChanged(testUserId, initial: true);
+    } else {
       try {
         await cloud.configure(supabaseUrl, supabaseKey);
       } catch (e) {
         lastError = 'Supabase: $e';
       }
-      notifyListeners();
+      cloud.onUserChanged = (u) => _onUserChanged(u?.id);
+      await _onUserChanged(cloud.user?.id, initial: true);
+    }
+    ready = true;
+    notifyListeners();
+
+    if (testStore == null) {
       unawaited(syncAll());
       _timer = Timer.periodic(const Duration(minutes: 15), (_) => syncAll());
     }
@@ -218,8 +231,11 @@ class AppState extends ChangeNotifier {
   List<DateTime> get weekDays =>
       List.generate(7, (i) => selectedWeek.add(Duration(days: i)));
 
-  List<Workout> get workouts =>
-      _workouts.values.toList()..sort((a, b) => a.date.compareTo(b.date));
+  /// Gli allenamenti vengono da intervals.icu, la cui API key è legata
+  /// all'account: senza login non ce ne sono.
+  List<Workout> get workouts => loggedIn
+      ? (_workouts.values.toList()..sort((a, b) => a.date.compareTo(b.date)))
+      : const [];
 
   List<Workout> workoutsBetween(DateTime from, DateTime to) => workouts
       .where((w) => !w.day.isBefore(from) && !w.day.isAfter(to))
@@ -232,8 +248,9 @@ class AppState extends ChangeNotifier {
     plan: activePlan,
   );
 
-  WeekMealPlan? get weekMealPlan =>
-      _mealPlans[selectedWeek.toIso8601String().substring(0, 10)];
+  WeekMealPlan? get weekMealPlan => loggedIn
+      ? _mealPlans[selectedWeek.toIso8601String().substring(0, 10)]
+      : null;
 
   /// Ricettario più le ricette generate per il piano della settimana
   /// (combinazioni di componenti), per visualizzare menu e preparazione.
@@ -256,7 +273,70 @@ class AppState extends ChangeNotifier {
   );
 
   bool get intervalsConfigured =>
-      (secrets[Secrets.intervalsApiKey] ?? '').isNotEmpty;
+      loggedIn && (secrets[Secrets.intervalsApiKey] ?? '').isNotEmpty;
+
+  // --- Account ------------------------------------------------------------
+
+  bool _testMode = false;
+  String? _testUserId;
+  String? _currentUser;
+  static const _keyOwnerKv = 'intervals_key_owner';
+
+  /// Utente collegato (Supabase); null se non si è fatto il login.
+  String? get userId => _testMode ? _testUserId : cloud.user?.id;
+
+  bool get loggedIn => userId != null;
+
+  /// Applica le regole legate all'account quando cambia l'utente: senza
+  /// login spariscono API key, allenamenti e menu; con un altro utente la
+  /// chiave del precedente viene scartata.
+  Future<void> _onUserChanged(String? id, {bool initial = false}) async {
+    if (!initial && id == _currentUser) return;
+    _currentUser = id;
+    // L'interfaccia segue subito il nuovo stato; la pulizia (portachiavi,
+    // database locale) può richiedere qualche istante.
+    notifyListeners();
+    if (id == null) {
+      await _clearAccountData();
+    } else {
+      final owner = store.getKv(_keyOwnerKv);
+      final hasKey = (secrets[Secrets.intervalsApiKey] ?? '').isNotEmpty;
+      if (owner == null && hasKey) {
+        // Chiave inserita prima di questa regola: la assegna all'utente.
+        store.setKv(_keyOwnerKv, id);
+      } else if (owner != null && owner != id) {
+        await _clearIntervalsKey();
+      }
+    }
+    notifyListeners();
+    if (!initial && id != null && !_testMode) unawaited(syncAll());
+  }
+
+  Future<void> _clearIntervalsKey() async {
+    await secrets.set(Secrets.intervalsApiKey, null);
+    await secrets.set(Secrets.intervalsAthleteId, null);
+    store.setKv(_keyOwnerKv, null);
+  }
+
+  /// Rimuove da questo dispositivo i dati legati all'account: API key,
+  /// allenamenti in cache e menu (che restano sul server, se sincronizzati).
+  Future<void> _clearAccountData() async {
+    await _clearIntervalsKey();
+    store.purge(Collections.credentials);
+    store.purge(Collections.workoutCache);
+    store.purge(Collections.mealPlans);
+    store.setKv('last_intervals_sync', null);
+    _workouts.clear();
+    _mealPlans.clear();
+    mealPlanWarnings = [];
+    lastIntervalsSync = null;
+  }
+
+  @visibleForTesting
+  Future<void> debugSetUser(String? id) async {
+    _testUserId = id;
+    await _onUserChanged(id);
+  }
 
   bool get claudeConfigured =>
       (secrets[Secrets.anthropicApiKey] ?? '').isNotEmpty;
@@ -291,13 +371,14 @@ class AppState extends ChangeNotifier {
     lastError = null;
     notifyListeners();
     final errors = <String>[];
-    // Prima Supabase: un dispositivo nuovo riceve così anche la API key di
-    // intervals.icu e scarica gli allenamenti nello stesso giro.
+    // Prima Supabase: se la API key di intervals.icu è salvata nell'account,
+    // un dispositivo appena collegato la riceve e scarica gli allenamenti
+    // nello stesso giro.
     if (cloud.user != null) {
       try {
         final changed = await cloud.sync();
         if (changed > 0) _loadFromStore();
-        if (await applySyncedCredentials()) await cloud.sync();
+        await applySyncedCredentials();
         lastCloudSync = DateTime.now();
       } catch (e) {
         errors.add('Supabase: $e');
@@ -317,29 +398,45 @@ class AppState extends ChangeNotifier {
 
   static const _intervalsCredentials = 'intervals';
 
-  /// Allinea la API key di intervals.icu locale con quella sincronizzata:
-  /// se il record remoto è diverso aggiorna il portachiavi; se il record non
-  /// esiste ancora e qui c'è una chiave, la carica. Ritorna true se il record
-  /// va inviato a Supabase.
+  /// Se l'utente ha salvato la API key di intervals.icu nel suo account,
+  /// la porta su questo dispositivo. Non carica mai nulla sul server: il
+  /// salvataggio nell'account è sempre esplicito
+  /// ([setIntervalsKeyInAccount]).
   @visibleForTesting
-  Future<bool> applySyncedCredentials() async {
+  Future<void> applySyncedCredentials() async {
+    final id = userId;
+    if (id == null) return;
     final rec = store.get(Collections.credentials, _intervalsCredentials);
-    final localKey = secrets[Secrets.intervalsApiKey] ?? '';
-    if (rec == null) {
-      if (localKey.isEmpty) return false;
-      _putIntervalsCredentials(
-        localKey,
-        secrets[Secrets.intervalsAthleteId] ?? '0',
-      );
-      return true;
+    final key = rec?['apiKey'] as String? ?? '';
+    if (key.isEmpty) return;
+    final athlete = rec?['athleteId'] as String? ?? '0';
+    if (key != secrets[Secrets.intervalsApiKey]) {
+      await secrets.set(Secrets.intervalsApiKey, key);
     }
-    final key = rec['apiKey'] as String? ?? '';
-    final athlete = rec['athleteId'] as String? ?? '0';
-    if (key != localKey) await secrets.set(Secrets.intervalsApiKey, key);
     if (athlete != (secrets[Secrets.intervalsAthleteId] ?? '0')) {
       await secrets.set(Secrets.intervalsAthleteId, athlete);
     }
-    return false;
+    store.setKv(_keyOwnerKv, id);
+  }
+
+  /// La API key di questo dispositivo è salvata anche nell'account.
+  bool get intervalsKeyInAccount =>
+      (store.get(Collections.credentials, _intervalsCredentials)?['apiKey']
+                  as String? ??
+              '')
+          .isNotEmpty;
+
+  /// Salva (o toglie) esplicitamente la API key nell'account, così gli altri
+  /// dispositivi la ricevono al login. Togliendola dall'account resta su
+  /// questo dispositivo.
+  Future<void> setIntervalsKeyInAccount(bool save) async {
+    if (!loggedIn) throw StateError('Accedi al tuo account');
+    final key = save ? secrets[Secrets.intervalsApiKey] ?? '' : '';
+    if (save && key.isEmpty) {
+      throw StateError('Prima salva una API key di intervals.icu');
+    }
+    _putIntervalsCredentials(key, secrets[Secrets.intervalsAthleteId] ?? '0');
+    _changed();
   }
 
   void _putIntervalsCredentials(String apiKey, String athleteId) => store.put(
@@ -628,6 +725,7 @@ class AppState extends ChangeNotifier {
   // --- Meal prep ----------------------------------------------------------
 
   void generateMealPlan({int? seed}) {
+    if (!loggedIn) return;
     final result = planner.generate(
       weekStart: selectedWeek,
       days: weekEnergy,
@@ -735,18 +833,24 @@ class AppState extends ChangeNotifier {
 
   // --- Impostazioni -------------------------------------------------------
 
+  /// Salva la API key su questo dispositivo, legata all'utente collegato.
+  /// Se l'utente l'aveva già salvata nell'account, aggiorna anche quella.
   Future<void> saveIntervalsSettings(String apiKey, String athleteId) async {
+    final id = userId;
+    if (id == null) throw StateError('Accedi per collegare intervals.icu');
+    final inAccount = intervalsKeyInAccount;
     await secrets.set(Secrets.intervalsApiKey, apiKey);
     await secrets.set(
       Secrets.intervalsAthleteId,
       athleteId.isEmpty ? '0' : athleteId,
     );
-    // Anche una chiave vuota si sincronizza: rimuove la chiave dagli altri
-    // dispositivi.
-    _putIntervalsCredentials(
-      secrets[Secrets.intervalsApiKey] ?? '',
-      secrets[Secrets.intervalsAthleteId] ?? '0',
-    );
+    store.setKv(_keyOwnerKv, id);
+    if (inAccount) {
+      _putIntervalsCredentials(
+        secrets[Secrets.intervalsApiKey] ?? '',
+        secrets[Secrets.intervalsAthleteId] ?? '0',
+      );
+    }
     _changed();
   }
 
@@ -787,8 +891,18 @@ class AppState extends ChangeNotifier {
     await syncAll();
   }
 
+  /// Esce dall'account: prima invia le modifiche in sospeso, poi rimuove
+  /// da questo dispositivo API key, allenamenti e menu.
   Future<void> cloudSignOut() async {
-    await cloud.signOut();
-    notifyListeners();
+    try {
+      await cloud.sync().timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('Sync prima del logout fallita: $e');
+    }
+    try {
+      await cloud.signOut();
+    } finally {
+      await _onUserChanged(null);
+    }
   }
 }

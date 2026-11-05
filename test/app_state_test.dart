@@ -10,9 +10,16 @@ import 'test_db.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<AppState> newState() async {
+  Future<AppState> newState({
+    String? user = 'utente-1',
+    LocalStore? store,
+  }) async {
     final s = AppState();
-    await s.init(testStore: LocalStore.inMemory(), db: testDb);
+    await s.init(
+      testStore: store ?? LocalStore.inMemory(),
+      db: testDb,
+      testUserId: user,
+    );
     return s;
   }
 
@@ -76,58 +83,120 @@ void main() {
     expect(used, contains(id));
   });
 
-  group('API key di intervals.icu sincronizzata', () {
-    test('salvata in locale e nel record sincronizzato', () async {
-      final s = await newState();
-      await s.saveIntervalsSettings('chiave-1', 'i123');
-      expect(s.secrets[Secrets.intervalsApiKey], 'chiave-1');
-      final rec = s.store.get(Collections.credentials, 'intervals')!;
-      expect(rec, {'apiKey': 'chiave-1', 'athleteId': 'i123'});
+  StoredRecord remoteKey(String key, {int offset = 0}) => StoredRecord(
+    Collections.credentials,
+    'intervals',
+    {'apiKey': key, 'athleteId': '0'},
+    DateTime.now().millisecondsSinceEpoch + offset,
+    false,
+  );
+
+  group('API key di intervals.icu legata al login', () {
+    test('senza login niente chiave, allenamenti e menu', () async {
+      final s = await newState(user: null);
+      expect(s.loggedIn, isFalse);
       expect(
-        s.store.dirtyRecords().map((r) => r.collection),
-        contains(Collections.credentials),
+        () => s.saveIntervalsSettings('k', '0'),
+        throwsA(isA<StateError>()),
       );
+      s.generateMealPlan(seed: 1);
+      expect(s.weekMealPlan, isNull);
+      expect(s.workouts, isEmpty);
+      expect(s.intervalsConfigured, isFalse);
     });
 
-    test('arriva da un altro dispositivo e viene applicata', () async {
+    test(
+      'salvata solo in locale finché non la si mette nell\'account',
+      () async {
+        final s = await newState();
+        await s.saveIntervalsSettings('chiave-1', 'i123');
+        expect(s.intervalsConfigured, isTrue);
+        expect(s.store.get(Collections.credentials, 'intervals'), isNull);
+        expect(s.intervalsKeyInAccount, isFalse);
+        expect(
+          s.store.dirtyRecords().map((r) => r.collection),
+          isNot(contains(Collections.credentials)),
+        );
+
+        await s.setIntervalsKeyInAccount(true);
+        expect(s.intervalsKeyInAccount, isTrue);
+        expect(s.store.get(Collections.credentials, 'intervals'), {
+          'apiKey': 'chiave-1',
+          'athleteId': 'i123',
+        });
+        // Una volta nell'account, la chiave aggiornata segue.
+        await s.saveIntervalsSettings('chiave-2', 'i123');
+        expect(
+          s.store.get(Collections.credentials, 'intervals')!['apiKey'],
+          'chiave-2',
+        );
+        // Tolta dall'account, resta su questo dispositivo.
+        await s.setIntervalsKeyInAccount(false);
+        expect(s.intervalsKeyInAccount, isFalse);
+        expect(s.secrets[Secrets.intervalsApiKey], 'chiave-2');
+      },
+    );
+
+    test('una chiave locale non viene mai caricata da sola', () async {
+      final s = await newState();
+      await s.saveIntervalsSettings('locale', '0');
+      await s.applySyncedCredentials();
+      expect(s.store.get(Collections.credentials, 'intervals'), isNull);
+    });
+
+    test('al login arriva la chiave salvata nell\'account', () async {
       final s = await newState();
       expect(s.intervalsConfigured, isFalse);
-      s.store.applyRemote(
-        StoredRecord(
-          Collections.credentials,
-          'intervals',
-          {'apiKey': 'dal-pc', 'athleteId': '0'},
-          DateTime.now().millisecondsSinceEpoch,
-          false,
-        ),
-      );
-      expect(await s.applySyncedCredentials(), isFalse);
+      s.store.applyRemote(remoteKey('dal-pc'));
+      await s.applySyncedCredentials();
       expect(s.secrets[Secrets.intervalsApiKey], 'dal-pc');
       expect(s.intervalsConfigured, isTrue);
-
-      // Rimossa altrove: sparisce anche qui.
-      s.store.applyRemote(
-        StoredRecord(
-          Collections.credentials,
-          'intervals',
-          {'apiKey': '', 'athleteId': '0'},
-          DateTime.now().millisecondsSinceEpoch + 1,
-          false,
-        ),
-      );
-      await s.applySyncedCredentials();
-      expect(s.intervalsConfigured, isFalse);
     });
 
-    test('una chiave già presente viene caricata se manca il record', () async {
+    test('al logout spariscono chiave, allenamenti e menu', () async {
       final s = await newState();
-      await s.secrets.set(Secrets.intervalsApiKey, 'vecchia');
-      expect(await s.applySyncedCredentials(), isTrue);
+      await s.saveIntervalsSettings('chiave', '0');
+      s.store.applyRemote(remoteKey('chiave'));
+      s.generateMealPlan(seed: 2);
+      s.store.put(Collections.workoutCache, 'e1', {'id': 'e1'});
+      expect(s.weekMealPlan, isNotNull);
+
+      await s.debugSetUser(null);
+      expect(s.loggedIn, isFalse);
+      expect(s.secrets[Secrets.intervalsApiKey], isNull);
+      expect(s.weekMealPlan, isNull);
+      expect(s.store.all(Collections.mealPlans), isEmpty);
+      expect(s.store.all(Collections.workoutCache), isEmpty);
+      expect(s.store.all(Collections.credentials), isEmpty);
+      // La cancellazione locale non si propaga al server.
       expect(
-        s.store.get(Collections.credentials, 'intervals')!['apiKey'],
-        'vecchia',
+        s.store.dirtyRecords().where(
+          (r) => r.deleted && r.collection == Collections.mealPlans,
+        ),
+        isEmpty,
       );
-      expect(await s.applySyncedCredentials(), isFalse);
+    });
+
+    test(
+      'con un altro utente la chiave del precedente viene scartata',
+      () async {
+        final s = await newState(user: 'utente-1');
+        await s.saveIntervalsSettings('di-utente-1', '0');
+        await s.debugSetUser('utente-2');
+        expect(s.secrets[Secrets.intervalsApiKey], isNull);
+      },
+    );
+
+    test('chiave preesistente senza proprietario: adottata al login', () async {
+      // Chiave inserita prima di questa regola (nessun proprietario).
+      final s = await newState(user: null);
+      await s.secrets.set(Secrets.intervalsApiKey, 'vecchia');
+      expect(s.intervalsConfigured, isFalse, reason: 'senza login non vale');
+      await s.debugSetUser('utente-1');
+      expect(s.intervalsConfigured, isTrue);
+      // Il proprietario ora è utente-1: un altro utente non la eredita.
+      await s.debugSetUser('utente-2');
+      expect(s.intervalsConfigured, isFalse);
     });
   });
 }

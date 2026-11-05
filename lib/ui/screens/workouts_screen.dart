@@ -5,6 +5,7 @@ import '../../models/workout.dart';
 import '../../services/energy_calculator.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/login_required.dart';
 import '../widgets/visuals.dart';
 import '../widgets/week_selector.dart';
 
@@ -14,6 +15,12 @@ class WorkoutsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    if (!s.loggedIn) {
+      return const LoginRequired(
+        'Gli allenamenti arrivano da intervals.icu, collegato al tuo '
+        'account: accedi per vederli e pianificarli.',
+      );
+    }
     final days = s.weekDays;
     final list = s.workoutsBetween(days.first, days.last);
     final baselinePerHour =

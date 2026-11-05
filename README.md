@@ -6,7 +6,7 @@ App Flutter (Linux, Windows, Android) che:
 - stima il **fabbisogno calorico e i macronutrienti** di ogni giorno in base alle sedute pianificate o svolte e al piano scelto (mantenimento, dimagrimento, massa);
 - genera un **menu settimanale orientato al meal prep**, con le porzioni scalate sul fabbisogno di ogni giorno, le sessioni di cucina e la **lista della spesa**;
 - crea nuove ricette con **Claude** (opzionale);
-- sincronizza profilo, piani, ricette e menu tra i dispositivi tramite **Supabase** (opzionale).
+- sincronizza profilo, piani, ricette e menu tra i dispositivi tramite **Supabase**, con un account personale.
 
 ## Avvio su Linux
 
@@ -40,11 +40,15 @@ Il database locale è in `~/.local/share/it.traincal.traincal/traincal.db`.
 
 | Servizio | Cosa serve |
 |---|---|
-| intervals.icu | API key da *Settings → Developer Settings*. ID atleta `0` = il proprietario della chiave. |
+| intervals.icu | Richiede il login. API key da *Settings › Developer Settings*; ID atleta `0` = il proprietario della chiave. Di default resta solo sul dispositivo: con *Salva la chiave nel mio account* la ricevono anche gli altri dispositivi quando accedi. |
 | Claude | API key Anthropic (uso a consumo). Modello di default `claude-opus-5-5`, modificabile. |
-| Supabase | Progetto gratuito su supabase.com: esegui [supabase/schema.sql](supabase/schema.sql) nel SQL editor, poi inserisci Project URL e publishable key, e registrati o accedi dall'app. |
+| Account (Supabase) | Il progetto è configurato in [lib/config/supabase_config.dart](lib/config/supabase_config.dart) (schema in [supabase/schema.sql](supabase/schema.sql)): basta registrarsi o accedere dall'app. |
 
 C!4udioM0cc1 password db subabase
+
+### Account e dati
+
+API key di intervals.icu, allenamenti e menu sono legati al login. Senza accesso l'app non ha la chiave, quindi niente allenamenti né menu; ricette e profilo restano disponibili. All'uscita dall'account le modifiche in sospeso vengono inviate a Supabase, poi chiave, allenamenti in cache e menu vengono rimossi dal dispositivo (i menu tornano al prossimo accesso). Se accede un altro utente, la chiave del precedente viene scartata.
 
 ## Come funziona la stima
 
