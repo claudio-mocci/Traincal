@@ -456,4 +456,150 @@ void main() {
       }
     }
   });
+
+  group('porzioni e ricette fisse', () {
+    final breakfasts = dbRecipes
+        .where((r) => r.type == MealType.breakfast)
+        .toList();
+    final snacks = dbRecipes.where((r) => r.type == MealType.snack).toList();
+
+    List<String> slotIds(WeekMealPlan plan, MealSlot slot) => [
+      for (final d in plan.days)
+        d.meals.firstWhere((m) => m.slot == slot).recipeId,
+    ];
+
+    test('le colazioni fisse sono sempre nella rotazione', () {
+      final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+      final fav = breakfasts[3].id;
+      for (final seed in [1, 2, 3]) {
+        final plan = planner
+            .generate(
+              weekStart: monday,
+              days: energy,
+              mealsPerDay: 4,
+              options: MealPlanOptions(
+                breakfastVariety: 2,
+                pinnedRecipeIds: {fav},
+                seed: seed,
+              ),
+            )
+            .plan;
+        final ids = slotIds(plan, MealSlot.breakfast);
+        expect(ids.where((id) => id == fav), hasLength(4), reason: '$ids');
+        expect(ids.toSet(), hasLength(2));
+      }
+      // Più fisse della varietà richiesta: si usano solo quelle.
+      final favs = {breakfasts[1].id, breakfasts[2].id, breakfasts[3].id};
+      final plan = planner
+          .generate(
+            weekStart: monday,
+            days: energy,
+            mealsPerDay: 5,
+            options: MealPlanOptions(
+              breakfastVariety: 1,
+              snackVariety: 2,
+              pinnedRecipeIds: {...favs, snacks[0].id},
+              seed: 4,
+            ),
+          )
+          .plan;
+      expect(slotIds(plan, MealSlot.breakfast).toSet(), favs);
+      final snackIds = [
+        ...slotIds(plan, MealSlot.morningSnack),
+        ...slotIds(plan, MealSlot.afternoonSnack),
+      ];
+      expect(snackIds, contains(snacks[0].id));
+      expect(snackIds.toSet(), hasLength(2));
+    });
+
+    test('le ricette a porzione fissa non vengono scalate', () {
+      final fav = breakfasts[0].copyWith(fixedServings: 1.5);
+      final all = [fav, ...dbRecipes.where((r) => r.id != fav.id)];
+      final planner = MealPlanner(foods: foods, recipes: all);
+      final plan = planner
+          .generate(
+            weekStart: monday,
+            days: energy,
+            mealsPerDay: 4,
+            options: MealPlanOptions(
+              breakfastVariety: 1,
+              pinnedRecipeIds: {fav.id},
+              seed: 2,
+            ),
+          )
+          .plan;
+      for (final d in plan.days) {
+        final b = d.meals.firstWhere((m) => m.slot == MealSlot.breakfast);
+        expect(b.recipeId, fav.id);
+        expect(b.servings, 1.5);
+        final total = planner.dayTotal(d);
+        expect(
+          (total.kcal - d.target.kcal).abs() / d.target.kcal,
+          lessThan(0.10),
+          reason: '${d.date}',
+        );
+      }
+    });
+
+    test('porzioni impostate a mano: gli altri pasti si adattano', () {
+      final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+      final plan = planner
+          .generate(
+            weekStart: monday,
+            days: energy,
+            mealsPerDay: 4,
+            options: const MealPlanOptions(seed: 6),
+          )
+          .plan;
+      final day = plan.days[2];
+      final lunch = day.meals.firstWhere((m) => m.slot == MealSlot.lunch);
+      final edited = DayMealPlan(
+        date: day.date,
+        target: day.target,
+        meals: [
+          for (final m in day.meals)
+            m.slot == MealSlot.lunch
+                ? MealEntry(
+                    m.slot,
+                    m.recipeId,
+                    lunch.servings + 0.75,
+                    locked: true,
+                  )
+                : m,
+        ],
+      );
+      final balanced = planner.rebalanceDay(edited);
+      final newLunch = balanced.meals.firstWhere(
+        (m) => m.slot == MealSlot.lunch,
+      );
+      expect(newLunch.servings, lunch.servings + 0.75);
+      expect(newLunch.locked, isTrue);
+      // Gli altri pasti non crescono, almeno uno si riduce.
+      final others = balanced.meals.where((m) => m.slot != MealSlot.lunch);
+      final before = {for (final m in day.meals) m.slot: m.servings};
+      expect(others.every((m) => m.servings <= before[m.slot]!), isTrue);
+      expect(others.any((m) => m.servings < before[m.slot]!), isTrue);
+      final total = planner.dayTotal(balanced);
+      expect(
+        (total.kcal - day.target.kcal).abs() / day.target.kcal,
+        lessThan(0.10),
+      );
+
+      // Serializzazione: il blocco e la porzione fissa sopravvivono.
+      final copy = DayMealPlan.fromJson(
+        jsonDecode(jsonEncode(balanced.toJson())) as Map<String, dynamic>,
+      );
+      expect(
+        copy.meals.firstWhere((m) => m.slot == MealSlot.lunch).locked,
+        isTrue,
+      );
+      final r = Recipe.fromJson(
+        jsonDecode(
+          jsonEncode(breakfasts[0].copyWith(fixedServings: 2).toJson()),
+        ) as Map<String, dynamic>,
+      );
+      expect(r.fixedServings, 2);
+      expect(r.copyWith(clearFixedServings: true).fixedServings, isNull);
+    });
+  });
 }

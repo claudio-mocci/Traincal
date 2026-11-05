@@ -8,18 +8,29 @@ class MealEntry {
   final String recipeId;
   final double servings;
 
-  const MealEntry(this.slot, this.recipeId, this.servings);
+  /// Porzioni impostate a mano: il ribilanciamento della giornata non le
+  /// tocca.
+  final bool locked;
+
+  const MealEntry(
+    this.slot,
+    this.recipeId,
+    this.servings, {
+    this.locked = false,
+  });
 
   Map<String, dynamic> toJson() => {
     'slot': slot.name,
     'recipeId': recipeId,
     'servings': servings,
+    if (locked) 'locked': true,
   };
 
   factory MealEntry.fromJson(Map<String, dynamic> j) => MealEntry(
     MealSlot.values.byName(j['slot'] as String),
     j['recipeId'] as String,
     (j['servings'] as num).toDouble(),
+    locked: j['locked'] as bool? ?? false,
   );
 }
 

@@ -35,6 +35,9 @@ class MealPrepPrefs {
   final int snackVariety;
   final Set<String> excludedRecipeIds;
 
+  /// Colazioni e spuntini fissi, sempre presenti nella rotazione.
+  final Set<String> pinnedRecipeIds;
+
   const MealPrepPrefs({
     this.prepSessions = 2,
     this.style = MealPrepStyle.recipes,
@@ -42,6 +45,7 @@ class MealPrepPrefs {
     this.breakfastVariety = 2,
     this.snackVariety = 2,
     this.excludedRecipeIds = const {},
+    this.pinnedRecipeIds = const {},
   });
 
   MealPrepPrefs copyWith({
@@ -51,6 +55,7 @@ class MealPrepPrefs {
     int? breakfastVariety,
     int? snackVariety,
     Set<String>? excludedRecipeIds,
+    Set<String>? pinnedRecipeIds,
   }) => MealPrepPrefs(
     prepSessions: prepSessions ?? this.prepSessions,
     style: style ?? this.style,
@@ -58,6 +63,7 @@ class MealPrepPrefs {
     breakfastVariety: breakfastVariety ?? this.breakfastVariety,
     snackVariety: snackVariety ?? this.snackVariety,
     excludedRecipeIds: excludedRecipeIds ?? this.excludedRecipeIds,
+    pinnedRecipeIds: pinnedRecipeIds ?? this.pinnedRecipeIds,
   );
 
   Map<String, dynamic> toJson() => {
@@ -67,6 +73,7 @@ class MealPrepPrefs {
     'breakfastVariety': breakfastVariety,
     'snackVariety': snackVariety,
     'excludedRecipeIds': excludedRecipeIds.toList(),
+    'pinnedRecipeIds': pinnedRecipeIds.toList(),
   };
 
   factory MealPrepPrefs.fromJson(Map<String, dynamic> j) => MealPrepPrefs(
@@ -77,6 +84,9 @@ class MealPrepPrefs {
     breakfastVariety: (j['breakfastVariety'] as num?)?.toInt() ?? 2,
     snackVariety: (j['snackVariety'] as num?)?.toInt() ?? 2,
     excludedRecipeIds: ((j['excludedRecipeIds'] as List?) ?? const [])
+        .cast<String>()
+        .toSet(),
+    pinnedRecipeIds: ((j['pinnedRecipeIds'] as List?) ?? const [])
         .cast<String>()
         .toSet(),
   );
@@ -484,7 +494,23 @@ class AppState extends ChangeNotifier {
     store.put(Collections.recipes, r.id, r.toJson());
     recipes = [...recipes.where((x) => x.id != r.id), r]
       ..sort((a, b) => a.name.compareTo(b.name));
+    _rebalanceDaysUsing(r.id);
     _changed();
+  }
+
+  /// Dopo la modifica di una ricetta (ingredienti o porzione fissa), le
+  /// giornate del menu che la usano si ribilanciano.
+  void _rebalanceDaysUsing(String recipeId) {
+    final plan = weekMealPlan;
+    if (plan == null) return;
+    if (!plan.days.any((d) => d.meals.any((m) => m.recipeId == recipeId))) {
+      return;
+    }
+    final p = planner;
+    _savePlanDays(plan, [
+      for (final d in plan.days)
+        d.meals.any((m) => m.recipeId == recipeId) ? p.rebalanceDay(d) : d,
+    ]);
   }
 
   void deleteRecipe(Recipe r) {
@@ -499,7 +525,30 @@ class AppState extends ChangeNotifier {
   void setRecipeExcluded(String id, bool excluded) {
     final ids = {...mealPrepPrefs.excludedRecipeIds};
     excluded ? ids.add(id) : ids.remove(id);
-    saveMealPrepPrefs(mealPrepPrefs.copyWith(excludedRecipeIds: ids));
+    saveMealPrepPrefs(
+      mealPrepPrefs.copyWith(
+        excludedRecipeIds: ids,
+        pinnedRecipeIds: excluded
+            ? ({...mealPrepPrefs.pinnedRecipeIds}..remove(id))
+            : null,
+      ),
+    );
+  }
+
+  /// Fissa una colazione o uno spuntino: il generatore la usa sempre.
+  /// Una ricetta fissata non può essere esclusa, e viceversa.
+  void setRecipePinned(String id, bool pinned) {
+    final ids = {...mealPrepPrefs.pinnedRecipeIds};
+    final excluded = {...mealPrepPrefs.excludedRecipeIds};
+    if (pinned) {
+      ids.add(id);
+      excluded.remove(id);
+    } else {
+      ids.remove(id);
+    }
+    saveMealPrepPrefs(
+      mealPrepPrefs.copyWith(pinnedRecipeIds: ids, excludedRecipeIds: excluded),
+    );
   }
 
   void saveMealPrepPrefs(MealPrepPrefs prefs) {
@@ -555,6 +604,7 @@ class AppState extends ChangeNotifier {
         breakfastVariety: mealPrepPrefs.breakfastVariety,
         snackVariety: mealPrepPrefs.snackVariety,
         excludedRecipeIds: mealPrepPrefs.excludedRecipeIds,
+        pinnedRecipeIds: mealPrepPrefs.pinnedRecipeIds,
         seed: seed ?? DateTime.now().millisecondsSinceEpoch,
       ),
     );
@@ -562,6 +612,56 @@ class AppState extends ChangeNotifier {
     mealPlanWarnings = result.warnings;
     store.put(Collections.mealPlans, result.plan.id, result.plan.toJson());
     _changed();
+  }
+
+  /// Imposta a mano le porzioni di un pasto del menu ([servings] null le
+  /// riporta automatiche) e ribilancia gli altri pasti della giornata.
+  void setMealServings(DateTime date, MealSlot slot, double? servings) {
+    final plan = weekMealPlan;
+    if (plan == null) return;
+    final p = planner;
+    final days = [
+      for (final d in plan.days)
+        if (d.date != date)
+          d
+        else
+          p.rebalanceDay(
+            DayMealPlan(
+              date: d.date,
+              target: d.target,
+              extras: d.extras,
+              meals: [
+                for (final m in d.meals)
+                  m.slot != slot
+                      ? m
+                      : MealEntry(
+                          m.slot,
+                          m.recipeId,
+                          servings ?? m.servings,
+                          locked: servings != null,
+                        ),
+              ],
+            ),
+          ),
+    ];
+    _savePlanDays(plan, days);
+    _changed();
+  }
+
+  /// Salva le giornate modificate e ricalcola le sessioni di preparazione
+  /// (senza notificare: ci pensa il chiamante).
+  void _savePlanDays(WeekMealPlan plan, List<DayMealPlan> days) {
+    final updated = plan.copyWith(
+      days: days,
+      generatedAt: DateTime.now(),
+      prepSessions: MealPlanner.buildPrepSessions(
+        days,
+        MealPlanner.blocksOf(plan),
+        plan.combos,
+      ),
+    );
+    _mealPlans[updated.id] = updated;
+    store.put(Collections.mealPlans, updated.id, updated.toJson());
   }
 
   /// Sostituisce una ricetta in tutto il piano della settimana, mantenendo
@@ -583,22 +683,18 @@ class AppState extends ChangeNotifier {
           meals: [
             for (final m in d.meals)
               m.recipeId == fromId
-                  ? MealEntry(m.slot, toId, adj(m.servings).clamp(0.5, 3))
+                  ? MealEntry(
+                      m.slot,
+                      toId,
+                      all[toId]!.fixedServings ??
+                          adj(m.servings).clamp(0.5, 3).toDouble(),
+                      locked: m.locked,
+                    )
                   : m,
           ],
         ),
     ];
-    final updated = plan.copyWith(
-      days: days,
-      generatedAt: DateTime.now(),
-      prepSessions: MealPlanner.buildPrepSessions(
-        days,
-        MealPlanner.blocksOf(plan),
-        plan.combos,
-      ),
-    );
-    _mealPlans[updated.id] = updated;
-    store.put(Collections.mealPlans, updated.id, updated.toJson());
+    _savePlanDays(plan, days);
     _changed();
   }
 

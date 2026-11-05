@@ -64,6 +64,10 @@ class Recipe {
   final List<String> tags;
   final RecipeSource source;
 
+  /// Porzioni sempre uguali nel menu, invece di adattarle alle kcal del
+  /// giorno (es. una colazione abituale). Null = porzioni automatiche.
+  final double? fixedServings;
+
   const Recipe({
     required this.id,
     required this.name,
@@ -76,6 +80,7 @@ class Recipe {
     this.prepMinutes = 30,
     this.tags = const [],
     this.source = RecipeSource.user,
+    this.fixedServings,
   });
 
   Macros macrosPerServing(Map<String, Food> foods) {
@@ -131,6 +136,8 @@ class Recipe {
     int? prepMinutes,
     List<String>? tags,
     RecipeSource? source,
+    double? fixedServings,
+    bool clearFixedServings = false,
   }) => Recipe(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -143,6 +150,9 @@ class Recipe {
     prepMinutes: prepMinutes ?? this.prepMinutes,
     tags: tags ?? this.tags,
     source: source ?? this.source,
+    fixedServings: clearFixedServings
+        ? null
+        : (fixedServings ?? this.fixedServings),
   );
 
   Map<String, dynamic> toJson() => {
@@ -157,6 +167,7 @@ class Recipe {
     'prepMinutes': prepMinutes,
     'tags': tags,
     'source': source.name,
+    if (fixedServings != null) 'fixedServings': fixedServings,
   };
 
   factory Recipe.fromJson(Map<String, dynamic> j) => Recipe(
@@ -173,5 +184,6 @@ class Recipe {
     prepMinutes: (j['prepMinutes'] as num?)?.toInt() ?? 30,
     tags: ((j['tags'] as List?) ?? const []).cast<String>(),
     source: RecipeSource.values.asNameMap()[j['source']] ?? RecipeSource.user,
+    fixedServings: (j['fixedServings'] as num?)?.toDouble(),
   );
 }

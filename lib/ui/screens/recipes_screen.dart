@@ -21,6 +21,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
   MealType? _type;
   String _query = '';
   bool _seasonOnly = false;
+  bool _pinnedOnly = false;
   final Set<String> _tags = {};
 
   @override
@@ -33,6 +34,9 @@ class _RecipesScreenState extends State<RecipesScreen> {
         .where((r) => r.name.toLowerCase().contains(q))
         .where((r) => _tags.every(r.tags.contains))
         .where((r) => !_seasonOnly || r.isInSeason(s.foods, days))
+        .where(
+          (r) => !_pinnedOnly || s.mealPrepPrefs.pinnedRecipeIds.contains(r.id),
+        )
         .toList();
 
     final header = [
@@ -82,6 +86,13 @@ class _RecipesScreenState extends State<RecipesScreen> {
                   'selezionata',
               selected: _seasonOnly,
               onSelected: (v) => setState(() => _seasonOnly = v),
+            ),
+            FilterChip(
+              avatar: const Icon(Icons.push_pin_outlined, size: 18),
+              label: const Text('Fisse'),
+              tooltip: 'Colazioni e spuntini sempre presenti nel menu',
+              selected: _pinnedOnly,
+              onSelected: (v) => setState(() => _pinnedOnly = v),
             ),
             for (final t in _dietTags)
               FilterChip(
@@ -140,6 +151,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
           if (i < header.length) return header[i];
           final r = list[i - header.length];
           final inSeason = r.isInSeason(s.foods, days);
+          final pinned = s.mealPrepPrefs.pinnedRecipeIds.contains(r.id);
           return ListTile(
             leading: Icon(switch (r.source) {
               RecipeSource.builtin => Icons.menu_book,
@@ -149,14 +161,30 @@ class _RecipesScreenState extends State<RecipesScreen> {
             title: Text(r.name),
             subtitle: Text(
               '${r.type.label} · ${r.macrosPerServing(s.foods)}'
+              '${r.fixedServings != null ? ' · porzione fissa' : ''}'
               '${inSeason ? '' : ' · fuori stagione'}',
             ),
-            trailing: Tooltip(
-              message: 'Usa nel meal prep',
-              child: Switch(
-                value: !s.mealPrepPrefs.excludedRecipeIds.contains(r.id),
-                onChanged: (v) => s.setRecipeExcluded(r.id, !v),
-              ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (r.type != MealType.main)
+                  IconButton(
+                    tooltip: pinned
+                        ? 'Non più fissa'
+                        : 'Fissa: sempre presente nel menu',
+                    isSelected: pinned,
+                    icon: const Icon(Icons.push_pin_outlined),
+                    selectedIcon: const Icon(Icons.push_pin),
+                    onPressed: () => s.setRecipePinned(r.id, !pinned),
+                  ),
+                Tooltip(
+                  message: 'Usa nel meal prep',
+                  child: Switch(
+                    value: !s.mealPrepPrefs.excludedRecipeIds.contains(r.id),
+                    onChanged: (v) => s.setRecipeExcluded(r.id, !v),
+                  ),
+                ),
+              ],
             ),
             onTap: () => showRecipeDetail(context, r),
           );
@@ -296,6 +324,7 @@ class _RecipeEditorState extends State<RecipeEditor> {
   late int _fridge;
   late int _minutes;
   late bool _freezable;
+  double? _fixedServings;
   late List<Ingredient> _ingredients;
   late String _id;
 
@@ -311,6 +340,7 @@ class _RecipeEditorState extends State<RecipeEditor> {
     _fridge = r?.fridgeDays ?? 3;
     _minutes = r?.prepMinutes ?? 30;
     _freezable = r?.freezable ?? false;
+    _fixedServings = r?.fixedServings;
     _ingredients = [...?r?.ingredients];
   }
 
@@ -332,6 +362,7 @@ class _RecipeEditorState extends State<RecipeEditor> {
     fridgeDays: _fridge,
     freezable: _freezable,
     prepMinutes: _minutes,
+    fixedServings: _fixedServings,
     // Le etichette di dieta dipendono dagli ingredienti, che qui possono
     // cambiare: restano solo le altre.
     tags: [
@@ -423,6 +454,39 @@ class _RecipeEditorState extends State<RecipeEditor> {
             value: _freezable,
             onChanged: (v) => setState(() => _freezable = v),
           ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Porzione fissa'),
+            subtitle: const Text(
+              'Nel menu si mangia sempre questa quantità, senza adattarla '
+              'alle kcal del giorno',
+            ),
+            value: _fixedServings != null,
+            onChanged: (v) => setState(() => _fixedServings = v ? 1 : null),
+          ),
+          if (_fixedServings != null)
+            Row(
+              children: [
+                const Expanded(child: Text('Porzioni per pasto')),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: _fixedServings! > 0.25
+                      ? () => setState(
+                          () => _fixedServings = _fixedServings! - 0.25,
+                        )
+                      : null,
+                ),
+                Text(fmtServings(_fixedServings!)),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: _fixedServings! < 4
+                      ? () => setState(
+                          () => _fixedServings = _fixedServings! + 0.25,
+                        )
+                      : null,
+                ),
+              ],
+            ),
           SectionTitle(
             'Ingredienti (per porzione)',
             trailing: TextButton.icon(

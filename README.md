@@ -54,7 +54,8 @@ Con *Pubblica su intervals.icu* i target giornalieri vengono scritti come **note
 
   In entrambi i casi le preparazioni che si conservano meno (es. pesce, 2 giorni) finiscono nei primi giorni del blocco, e si evitano le proteine del blocco precedente.
 - **Stagionalità**: ogni alimento fresco ha i suoi mesi di stagione (Italia). Le ricette con frutta e verdura fuori stagione nei giorni del blocco sono fortemente penalizzate, quelle con prodotti di stagione leggermente favorite. A cavallo di due mesi conta la maggioranza dei giorni.
-- Colazioni e spuntini ruotano tra poche ricette.
+- Colazioni e spuntini ruotano tra poche ricette. Con la puntina (schermata Ricette) una colazione o uno spuntino diventa **fisso**: entra sempre nella rotazione, e se le fisse sono più della varietà richiesta si usano solo quelle.
+- **Porzioni**: dal menu (icona "Porzioni" accanto a ogni pasto) puoi impostare a mano le porzioni di un pasto. Il pasto resta bloccato e gli altri della giornata si ricalcolano per rispettare il target; "Automatico" lo sblocca. Nell'editor una ricetta può avere una **porzione fissa**, che non viene mai adattata alle kcal del giorno (utile per le colazioni abituali). Le quantità della preparazione e la spesa si aggiornano di conseguenza.
 - Le porzioni (a passi di ¼) sono scalate sulle kcal del giorno; un piccolo set di integrazioni (yogurt greco, banana, pane, noci) chiude i gap di proteine e kcal.
 - La lista della spesa somma gli ingredienti per reparto, in pezzi o confezioni.
 

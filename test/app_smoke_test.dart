@@ -70,6 +70,16 @@ void main() {
       await tester.tap(find.text('Genera menu'));
       await tester.pumpAndSettle();
       expect(state.weekMealPlan, isNotNull);
+      // Porzioni impostate a mano sul primo pasto del menu.
+      await tester.tap(find.byTooltip('Porzioni').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.add).last);
+      await tester.tap(find.text('Imposta'));
+      await tester.pumpAndSettle();
+      expect(
+        state.weekMealPlan!.days.expand((d) => d.meals).where((m) => m.locked),
+        hasLength(1),
+      );
       await tester.tap(find.text('Preparazione'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Spesa'));

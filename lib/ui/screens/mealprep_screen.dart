@@ -145,6 +145,21 @@ class _OptionsBar extends StatelessWidget {
             4,
             (v) => s.saveMealPrepPrefs(p.copyWith(snackVariety: v)),
           ),
+          if (p.pinnedRecipeIds.isNotEmpty)
+            Builder(
+              builder: (context) {
+                final byId = s.recipesById;
+                int count(MealType t) =>
+                    p.pinnedRecipeIds.where((id) => byId[id]?.type == t).length;
+                return Chip(
+                  avatar: const Icon(Icons.push_pin, size: 16),
+                  label: Text(
+                    'Fisse: ${count(MealType.breakfast)} colazioni, '
+                    '${count(MealType.snack)} spuntini',
+                  ),
+                );
+              },
+            ),
           FilledButton.icon(
             icon: Icon(hasPlan ? Icons.refresh : Icons.auto_awesome),
             label: Text(hasPlan ? 'Rigenera' : 'Genera menu'),
@@ -198,12 +213,38 @@ class _MenuTab extends StatelessWidget {
                         title: Text(r.name),
                         subtitle: Text(
                           '${fmtServings(m.servings)} porz. · '
-                          '${(r.macrosPerServing(s.foods).kcal * m.servings).round()} kcal',
+                          '${(r.macrosPerServing(s.foods).kcal * m.servings).round()} kcal'
+                          '${m.locked
+                              ? ' · impostate a mano'
+                              : r.fixedServings != null
+                              ? ' · porzione fissa'
+                              : ''}',
                         ),
-                        trailing: IconButton(
-                          tooltip: 'Sostituisci in tutta la settimana',
-                          icon: const Icon(Icons.swap_horiz),
-                          onPressed: () => _swap(context, r),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Porzioni',
+                              icon: Icon(
+                                m.locked || r.fixedServings != null
+                                    ? Icons.lock_outline
+                                    : Icons.tune,
+                              ),
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (_) => _ServingsDialog(
+                                  date: d.date,
+                                  meal: m,
+                                  recipe: r,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Sostituisci in tutta la settimana',
+                              icon: const Icon(Icons.swap_horiz),
+                              onPressed: () => _swap(context, r),
+                            ),
+                          ],
                         ),
                         onTap: () => showRecipeDetail(context, r),
                       ),
@@ -315,6 +356,113 @@ class _SwapDialogState extends State<_SwapDialog> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Porzioni di un pasto del menu: impostate a mano restano fisse e gli
+/// altri pasti del giorno si adattano per rispettare il target.
+class _ServingsDialog extends StatefulWidget {
+  final DateTime date;
+  final MealEntry meal;
+  final Recipe recipe;
+
+  const _ServingsDialog({
+    required this.date,
+    required this.meal,
+    required this.recipe,
+  });
+
+  @override
+  State<_ServingsDialog> createState() => _ServingsDialogState();
+}
+
+class _ServingsDialogState extends State<_ServingsDialog> {
+  late double _servings = widget.meal.servings;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.read<AppState>();
+    final perServing = widget.recipe.macrosPerServing(s.foods);
+    final fixedByRecipe = widget.recipe.fixedServings != null;
+    return AlertDialog(
+      title: Text(widget.recipe.name),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${widget.meal.slot.label} · ${dayLongFmt.format(widget.date)}',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.remove),
+                  onPressed: _servings > 0.25
+                      ? () => setState(() => _servings -= 0.25)
+                      : null,
+                ),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '${fmtServings(_servings)} porz.',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.add),
+                  onPressed: _servings < 4
+                      ? () => setState(() => _servings += 0.25)
+                      : null,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Center(child: MacroRow(perServing.scale(_servings), dense: true)),
+            const SizedBox(height: 12),
+            Text(
+              fixedByRecipe
+                  ? 'Questa ricetta ha una porzione fissa '
+                        '(${fmtServings(widget.recipe.fixedServings!)}): puoi '
+                        'cambiarla qui solo per questo pasto, o dall\'editor '
+                        'della ricetta per tutti.'
+                  : 'Gli altri pasti del giorno vengono ricalcolati per '
+                        'restare nel target.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        if (widget.meal.locked)
+          TextButton(
+            onPressed: () {
+              s.setMealServings(widget.date, widget.meal.slot, null);
+              Navigator.pop(context);
+            },
+            child: const Text('Automatico'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annulla'),
+        ),
+        FilledButton(
+          onPressed: () {
+            s.setMealServings(widget.date, widget.meal.slot, _servings);
+            Navigator.pop(context);
+          },
+          child: const Text('Imposta'),
+        ),
+      ],
     );
   }
 }

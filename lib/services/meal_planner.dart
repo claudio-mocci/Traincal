@@ -19,6 +19,9 @@ class MealPlanOptions {
   final int breakfastVariety;
   final int snackVariety;
   final Set<String> excludedRecipeIds;
+
+  /// Colazioni e spuntini fissi: entrano sempre nella rotazione.
+  final Set<String> pinnedRecipeIds;
   final int seed;
 
   /// Peso della stagionalità nella scelta delle ricette: 0 la ignora, 0.6
@@ -32,6 +35,7 @@ class MealPlanOptions {
     this.breakfastVariety = 2,
     this.snackVariety = 2,
     this.excludedRecipeIds = const {},
+    this.pinnedRecipeIds = const {},
     this.seed = 0,
     this.seasonWeight = 0.6,
   });
@@ -307,7 +311,23 @@ class MealPlanner {
     void rotate(MealType type, int variety) {
       final slots = shares.keys.where((s) => s.type == type).toList();
       if (slots.isEmpty) return;
-      final chosen = pick(type, max(variety, slots.length), when: dayDates);
+      // Prima le ricette fisse, poi altre scelte dal generatore fino alla
+      // varietà richiesta.
+      final pinned = available
+          .where((r) => r.type == type)
+          .where((r) => options.pinnedRecipeIds.contains(r.id))
+          .toList();
+      final wanted = max(variety, slots.length);
+      final chosen = [
+        ...pinned,
+        if (pinned.length < wanted)
+          ...pick(
+            type,
+            wanted - pinned.length,
+            when: dayDates,
+            avoidIds: {for (final r in pinned) r.id},
+          ).where((r) => !pinned.contains(r)),
+      ];
       if (chosen.isEmpty) {
         warnings.add('Nessuna ricetta di tipo "${type.label}" disponibile.');
         return;
@@ -325,7 +345,9 @@ class MealPlanner {
     // Porzioni scalate sul fabbisogno del giorno + integrazioni.
     final dayPlans = <DayMealPlan>[];
     for (var d = 0; d < days.length; d++) {
-      dayPlans.add(_buildDay(days[d], assignments[d], shares));
+      dayPlans.add(
+        _buildDay(days[d].date, days[d].target, assignments[d], shares),
+      );
     }
 
     final prepSessions = buildPrepSessions(dayPlans, [
@@ -540,12 +562,40 @@ class MealPlanner {
 
   static double _round(double v, double step) => (v / step).round() * step;
 
+  /// Ricalcola le porzioni di una giornata già pianificata: i pasti
+  /// bloccati e le ricette a porzione fissa restano come sono, gli altri si
+  /// adattano per raggiungere il target; le integrazioni si ricalcolano.
+  DayMealPlan rebalanceDay(DayMealPlan day) {
+    final assigned = <MealSlot, Recipe>{};
+    final locked = <MealSlot, double>{};
+    for (final m in day.meals) {
+      final r = _lookup(m.recipeId);
+      if (r == null) continue;
+      assigned[m.slot] = r;
+      if (m.locked) locked[m.slot] = m.servings;
+    }
+    return _buildDay(
+      day.date,
+      day.target,
+      assigned,
+      slotShares(day.meals.length),
+      locked: locked,
+    );
+  }
+
   DayMealPlan _buildDay(
-    DayEnergy day,
+    DateTime date,
+    Macros target,
     Map<MealSlot, Recipe> assigned,
-    Map<MealSlot, double> shares,
-  ) {
-    final target = day.target;
+    Map<MealSlot, double> shares, {
+    Map<MealSlot, double> locked = const {},
+  }) {
+    // Porzioni che non si adattano: scelte a mano o fisse per ricetta.
+    final fixed = <MealSlot, double>{
+      for (final e in assigned.entries)
+        if (e.value.fixedServings != null) e.key: e.value.fixedServings!,
+      ...locked,
+    };
     final orderedSlots = MealSlot.values
         .where((s) => assigned.containsKey(s))
         .toList();
@@ -562,12 +612,23 @@ class MealPlanner {
       return t;
     }
 
-    final shareSum = orderedSlots.fold<double>(0, (s, x) => s + shares[x]!);
+    double share(MealSlot s) => shares[s] ?? 0.2;
+    final fixedKcal = fixed.entries.fold<double>(
+      0,
+      (a, e) => a + _perServing(assigned[e.key]!).kcal * e.value,
+    );
+    final shareSum = orderedSlots
+        .where((s) => !fixed.containsKey(s))
+        .fold<double>(0, (a, x) => a + share(x));
     List<MealEntry> scaleTo(double kcal) => [
       for (final slot in orderedSlots)
         () {
           final r = assigned[slot]!;
-          final want = kcal * shares[slot]! / shareSum;
+          final f = fixed[slot];
+          if (f != null) {
+            return MealEntry(slot, r.id, f, locked: locked.containsKey(slot));
+          }
+          final want = max(0.0, kcal - fixedKcal) * share(slot) / shareSum;
           final servings = _round(want / _perServing(r).kcal, 0.25);
           return MealEntry(slot, r.id, servings.clamp(0.5, 3.0).toDouble());
         }(),
@@ -621,7 +682,7 @@ class MealPlanner {
     }
 
     return DayMealPlan(
-      date: day.date,
+      date: date,
       target: target,
       meals: meals,
       extras: extras,
