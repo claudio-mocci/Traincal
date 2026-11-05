@@ -80,7 +80,16 @@ class _HomeShellState extends State<HomeShell> {
               TextButton(onPressed: s.clearError, child: const Text('Chiudi')),
             ],
           ),
-        Expanded(child: _pages[_index]),
+        // Su desktop le pagine restano leggibili, centrate.
+        Expanded(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 860),
+              child: _pages[_index],
+            ),
+          ),
+        ),
       ],
     );
 
@@ -101,7 +110,7 @@ class _HomeShellState extends State<HomeShell> {
                   ),
               ],
             ),
-            const VerticalDivider(width: 1),
+            const SizedBox(width: 8),
             Expanded(child: body),
           ],
         ),

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/food.dart';
 import '../../models/workout.dart';
+import '../theme.dart';
 
 final dayFmt = DateFormat('EEE d MMM');
 final dayLongFmt = DateFormat('EEEE d MMMM');
@@ -27,7 +28,7 @@ IconData sportIcon(Sport s) => switch (s) {
   Sport.other => Icons.sports,
 };
 
-/// Riga compatta con kcal e macro.
+/// Riga compatta con kcal e macro, come pillole con pallino colorato.
 class MacroRow extends StatelessWidget {
   final Macros m;
   final Macros? target;
@@ -37,23 +38,41 @@ class MacroRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    Widget chip(String label, double v, double? t, Color c) {
-      final text = t == null
-          ? '$label ${v.round()}'
-          : '$label ${v.round()}/${t.round()}';
+    final c = context.colors;
+    final theme = Theme.of(context);
+    Widget chip(String label, double v, double? t, Color color) {
+      final value = t == null ? '${v.round()}' : '${v.round()}/${t.round()}';
       return Container(
-        padding: EdgeInsets.symmetric(horizontal: dense ? 6 : 8, vertical: 2),
+        padding: EdgeInsets.symmetric(horizontal: dense ? 8 : 10, vertical: 3),
         decoration: BoxDecoration(
-          color: c.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: dense ? 12 : 13,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 5),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label ',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  TextSpan(
+                    text: value,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              style: TextStyle(fontSize: dense ? 11.5 : 12.5),
+            ),
+          ],
         ),
       );
     }
@@ -62,10 +81,10 @@ class MacroRow extends StatelessWidget {
       spacing: 6,
       runSpacing: 4,
       children: [
-        chip('kcal', m.kcal, target?.kcal, cs.primary),
-        chip('P', m.protein, target?.protein, Colors.red),
-        chip('C', m.carbs, target?.carbs, Colors.amber.shade700),
-        chip('G', m.fat, target?.fat, Colors.blue),
+        chip('kcal', m.kcal, target?.kcal, c.kcal),
+        chip('P', m.protein, target?.protein, c.protein),
+        chip('C', m.carbs, target?.carbs, c.carbs),
+        chip('G', m.fat, target?.fat, c.fat),
       ],
     );
   }
@@ -102,7 +121,7 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+    padding: const EdgeInsets.fromLTRB(20, 24, 12, 10),
     child: Row(
       children: [
         Expanded(
@@ -127,18 +146,38 @@ class EmptyHint extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(text, textAlign: TextAlign.center),
-          if (action != null) ...[const SizedBox(height: 16), action!],
-        ],
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 40, color: primary),
+            ),
+            const SizedBox(height: 16),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            if (action != null) ...[const SizedBox(height: 16), action!],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

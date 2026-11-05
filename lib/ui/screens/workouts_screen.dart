@@ -5,6 +5,7 @@ import '../../models/workout.dart';
 import '../../services/energy_calculator.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/visuals.dart';
 import '../widgets/week_selector.dart';
 
 class WorkoutsScreen extends StatelessWidget {
@@ -46,7 +47,10 @@ class WorkoutsScreen extends StatelessWidget {
             ),
           for (final day in days)
             if (list.any((w) => w.day == day)) ...[
-              SectionTitle(dayLongFmt.format(day)),
+              SectionTitle(
+                dayLongFmt.format(day)[0].toUpperCase() +
+                    dayLongFmt.format(day).substring(1),
+              ),
               for (final w in list.where((w) => w.day == day))
                 Card(
                   margin: const EdgeInsets.symmetric(
@@ -54,7 +58,8 @@ class WorkoutsScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   child: ListTile(
-                    leading: CircleAvatar(child: Icon(sportIcon(w.sport))),
+                    contentPadding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+                    leading: SportTile(w.sport, size: 46),
                     title: Text(w.name),
                     subtitle: Text(
                       [

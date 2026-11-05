@@ -20,7 +20,7 @@ class ShoppingItem {
     }
     if (f.packageGrams != null) {
       final n = max(1, (grams / f.packageGrams!).ceil());
-      return '${_fmtGrams(grams)} → $n conf. da ${_fmtGrams(f.packageGrams!)}';
+      return '${_fmtGrams(grams)} · $n conf. da ${_fmtGrams(f.packageGrams!)}';
     }
     return _fmtGrams(grams);
   }

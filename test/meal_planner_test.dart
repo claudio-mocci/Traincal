@@ -390,7 +390,7 @@ void main() {
     final eggs = ShoppingItem(foods['f_uova']!, 400);
     expect(eggs.quantityLabel, startsWith('8 × uovo'));
     final rice = ShoppingItem(foods['f_riso']!, 1250);
-    expect(rice.quantityLabel, '1.3 kg → 2 conf. da 1 kg');
+    expect(rice.quantityLabel, '1.3 kg · 2 conf. da 1 kg');
     final zucchine = ShoppingItem(foods['f_zucchine']!, 523);
     expect(zucchine.quantityLabel, '530 g');
   });

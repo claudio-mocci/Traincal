@@ -75,6 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           if (s.secrets.usingFallback)
             Card(
+              margin: const EdgeInsets.only(bottom: 16),
               color: Theme.of(context).colorScheme.errorContainer,
               child: const Padding(
                 padding: EdgeInsets.all(12),
@@ -89,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           secret(
             _icuKey,
             'API key',
-            help: 'intervals.icu → Settings → Developer Settings',
+            help: 'intervals.icu › Settings › Developer Settings',
           ),
           TextField(
             controller: _icuAthlete,
@@ -124,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           secret(
             _claudeKey,
             'Anthropic API key',
-            help: 'platform.claude.com → API keys. Uso a consumo.',
+            help: 'platform.claude.com › API keys. Uso a consumo.',
           ),
           TextField(
             controller: _claudeModel,

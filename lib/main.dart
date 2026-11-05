@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'state/app_state.dart';
 import 'ui/home_shell.dart';
+import 'ui/theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,18 +23,11 @@ class TraincalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ThemeData theme(Brightness b) => ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF00897B),
-        brightness: b,
-      ),
-      useMaterial3: true,
-    );
     return MaterialApp(
       title: 'Traincal',
       debugShowCheckedModeBanner: false,
-      theme: theme(Brightness.light),
-      darkTheme: theme(Brightness.dark),
+      theme: AppTheme.build(Brightness.light),
+      darkTheme: AppTheme.build(Brightness.dark),
       home: Consumer<AppState>(
         builder: (context, s, _) => s.ready
             ? const HomeShell()

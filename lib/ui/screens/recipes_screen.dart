@@ -6,7 +6,9 @@ import '../../models/recipe.dart';
 import '../../services/claude_client.dart';
 import '../../services/meal_planner.dart';
 import '../../state/app_state.dart';
+import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/visuals.dart';
 
 class RecipesScreen extends StatefulWidget {
   const RecipesScreen({super.key});
@@ -41,83 +43,93 @@ class _RecipesScreenState extends State<RecipesScreen> {
         .where((r) => !_mineOnly || r.source == RecipeSource.user)
         .toList();
 
+    final theme = Theme.of(context);
+    IconData typeIcon(MealType? t) => switch (t) {
+      null => Icons.apps_rounded,
+      MealType.breakfast => Icons.breakfast_dining_rounded,
+      MealType.main => Icons.dinner_dining_rounded,
+      MealType.snack => Icons.cookie_rounded,
+    };
+    Widget hScroll(List<Widget> children) => SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          for (final (i, c) in children.indexed) ...[
+            if (i > 0) const SizedBox(width: 8),
+            c,
+          ],
+        ],
+      ),
+    );
+
     final header = [
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: TextField(
           decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.search),
+            prefixIcon: Icon(Icons.search_rounded),
             hintText: 'Cerca ricetta',
-            border: OutlineInputBorder(),
             isDense: true,
           ),
           onChanged: (v) => setState(() => _query = v),
         ),
       ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            ChoiceChip(
-              label: const Text('Tutte'),
-              selected: _type == null,
-              onSelected: (_) => setState(() => _type = null),
+      const SizedBox(height: 12),
+      hScroll([
+        for (final t in <MealType?>[null, ...MealType.values])
+          ChoiceChip(
+            showCheckmark: false,
+            avatar: Icon(
+              typeIcon(t),
+              size: 18,
+              color: _type == t ? Colors.white : theme.colorScheme.primary,
             ),
-            for (final t in MealType.values)
-              ChoiceChip(
-                label: Text(t.label),
-                selected: _type == t,
-                onSelected: (_) => setState(() => _type = t),
-              ),
-          ],
+            label: Text(t?.label ?? 'Tutte'),
+            selected: _type == t,
+            onSelected: (_) => setState(() => _type = t),
+          ),
+      ]),
+      const SizedBox(height: 8),
+      hScroll([
+        FilterChip(
+          avatar: const Icon(Icons.person_outline_rounded, size: 18),
+          label: const Text('Mie ricette'),
+          tooltip: 'Ricette create o modificate da te',
+          selected: _mineOnly,
+          onSelected: (v) => setState(() => _mineOnly = v),
         ),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            FilterChip(
-              avatar: const Icon(Icons.person_outline, size: 18),
-              label: const Text('Mie ricette'),
-              tooltip: 'Ricette create o modificate da te',
-              selected: _mineOnly,
-              onSelected: (v) => setState(() => _mineOnly = v),
-            ),
-            FilterChip(
-              avatar: const Icon(Icons.eco_outlined, size: 18),
-              label: const Text('Di stagione'),
-              tooltip:
-                  'Nessun ingrediente fuori stagione nella settimana '
-                  'selezionata',
-              selected: _seasonOnly,
-              onSelected: (v) => setState(() => _seasonOnly = v),
-            ),
-            FilterChip(
-              avatar: const Icon(Icons.push_pin_outlined, size: 18),
-              label: const Text('Fisse'),
-              tooltip: 'Colazioni e spuntini sempre presenti nel menu',
-              selected: _pinnedOnly,
-              onSelected: (v) => setState(() => _pinnedOnly = v),
-            ),
-            for (final t in _dietTags)
-              FilterChip(
-                label: Text(t),
-                selected: _tags.contains(t),
-                onSelected: (v) =>
-                    setState(() => v ? _tags.add(t) : _tags.remove(t)),
-              ),
-          ],
+        FilterChip(
+          avatar: const Icon(Icons.eco_outlined, size: 18),
+          label: const Text('Di stagione'),
+          tooltip:
+              'Nessun ingrediente fuori stagione nella settimana '
+              'selezionata',
+          selected: _seasonOnly,
+          onSelected: (v) => setState(() => _seasonOnly = v),
         ),
-      ),
+        FilterChip(
+          avatar: const Icon(Icons.push_pin_outlined, size: 18),
+          label: const Text('Fisse'),
+          tooltip: 'Colazioni e spuntini sempre presenti nel menu',
+          selected: _pinnedOnly,
+          onSelected: (v) => setState(() => _pinnedOnly = v),
+        ),
+        for (final t in _dietTags)
+          FilterChip(
+            label: Text(t),
+            selected: _tags.contains(t),
+            onSelected: (v) =>
+                setState(() => v ? _tags.add(t) : _tags.remove(t)),
+          ),
+      ]),
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        padding: const EdgeInsets.fromLTRB(20, 14, 16, 6),
         child: Text(
           '${list.length} ricette',
-          style: Theme.of(context).textTheme.labelMedium,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     ];
@@ -131,12 +143,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
             heroTag: 'new',
             tooltip: 'Nuova ricetta',
             onPressed: () => _openEditor(context, null),
-            child: const Icon(Icons.edit),
+            child: const Icon(Icons.edit_rounded),
           ),
           const SizedBox(height: 12),
           FloatingActionButton.extended(
             heroTag: 'ai',
-            icon: const Icon(Icons.auto_awesome),
+            icon: const Icon(Icons.auto_awesome_rounded),
             label: const Text('Genera con AI'),
             onPressed: () {
               if (!s.claudeConfigured) {
@@ -161,41 +173,14 @@ class _RecipesScreenState extends State<RecipesScreen> {
           final r = list[i - header.length];
           final inSeason = r.isInSeason(s.foods, days);
           final pinned = s.mealPrepPrefs.pinnedRecipeIds.contains(r.id);
-          return ListTile(
-            leading: Icon(switch (r.source) {
-              RecipeSource.builtin => Icons.menu_book,
-              RecipeSource.user => Icons.person,
-              RecipeSource.ai => Icons.auto_awesome,
-            }),
-            title: Text(r.name),
-            subtitle: Text(
-              '${r.type.label} · ${r.macrosPerServing(s.foods)}'
-              '${r.fixedServings != null ? ' · porzione fissa' : ''}'
-              '${inSeason ? '' : ' · fuori stagione'}',
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: _RecipeCard(
+              recipe: r,
+              inSeason: inSeason,
+              pinned: pinned,
+              included: !s.mealPrepPrefs.excludedRecipeIds.contains(r.id),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (r.type != MealType.main)
-                  IconButton(
-                    tooltip: pinned
-                        ? 'Non più fissa'
-                        : 'Fissa: sempre presente nel menu',
-                    isSelected: pinned,
-                    icon: const Icon(Icons.push_pin_outlined),
-                    selectedIcon: const Icon(Icons.push_pin),
-                    onPressed: () => s.setRecipePinned(r.id, !pinned),
-                  ),
-                Tooltip(
-                  message: 'Usa nel meal prep',
-                  child: Switch(
-                    value: !s.mealPrepPrefs.excludedRecipeIds.contains(r.id),
-                    onChanged: (v) => s.setRecipeExcluded(r.id, !v),
-                  ),
-                ),
-              ],
-            ),
-            onTap: () => showRecipeDetail(context, r),
           );
         },
       ),
@@ -218,6 +203,150 @@ String _seasonNote(Food? f, List<DateTime> days) {
       : days.any(f.inSeason)
       ? ' (a fine o inizio stagione)'
       : ' (fuori stagione)';
+}
+
+class _RecipeCard extends StatelessWidget {
+  final Recipe recipe;
+  final bool inSeason;
+  final bool pinned;
+  final bool included;
+
+  const _RecipeCard({
+    required this.recipe,
+    required this.inSeason,
+    required this.pinned,
+    required this.included,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.read<AppState>();
+    final theme = Theme.of(context);
+    final c = context.colors;
+    final r = recipe;
+    final m = r.macrosPerServing(s.foods);
+    return Card(
+      child: InkWell(
+        onTap: () => showRecipeDetail(context, r),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 4, 12),
+          child: Row(
+            children: [
+              Opacity(
+                opacity: included ? 1 : 0.4,
+                child: FoodTile(r, size: 58),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (r.source != RecipeSource.builtin) ...[
+                          Icon(
+                            r.source == RecipeSource.ai
+                                ? Icons.auto_awesome_rounded
+                                : Icons.person_rounded,
+                            size: 14,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Flexible(
+                          child: Text(
+                            r.type.label.toUpperCase(),
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      r.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: included
+                            ? null
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        InfoPill(
+                          '${m.kcal.round()} kcal',
+                          icon: Icons.local_fire_department_rounded,
+                          color: c.kcal,
+                          background: c.kcal.withValues(alpha: 0.12),
+                        ),
+                        InfoPill(
+                          'P ${m.protein.round()} g',
+                          color: c.protein,
+                          background: c.protein.withValues(alpha: 0.12),
+                        ),
+                        if (r.prepMinutes > 0)
+                          InfoPill(
+                            '${r.prepMinutes} min',
+                            icon: Icons.schedule_rounded,
+                          ),
+                        if (r.fixedServings != null)
+                          InfoPill(
+                            'porzione fissa',
+                            icon: Icons.lock_rounded,
+                            color: theme.colorScheme.primary,
+                          ),
+                        if (!inSeason)
+                          const InfoPill(
+                            'fuori stagione',
+                            icon: Icons.eco_outlined,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (r.type != MealType.main)
+                    IconButton(
+                      tooltip: pinned
+                          ? 'Non più fissa'
+                          : 'Fissa: sempre presente nel menu',
+                      isSelected: pinned,
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.push_pin_outlined),
+                      selectedIcon: Icon(
+                        Icons.push_pin_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
+                      onPressed: () => s.setRecipePinned(r.id, !pinned),
+                    ),
+                  Tooltip(
+                    message: 'Usa nel meal prep',
+                    child: Transform.scale(
+                      scale: 0.8,
+                      child: Switch(
+                        value: included,
+                        onChanged: (v) => s.setRecipeExcluded(r.id, !v),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 void _openEditor(BuildContext context, Recipe? r) {
