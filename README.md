@@ -32,6 +32,15 @@ tool/install_linux.sh --remove   # disinstalla (i dati restano)
 
 L'app finisce in `~/.local/opt/traincal`. Dopo ogni modifica al codice, rilancia lo script per aggiornare la versione installata.
 
+**Aggiornamento su Android.** Per aggiornare l'app sul telefono senza disinstallarla (i dati restano), con il telefono collegato in debug USB:
+
+```bash
+tool/install_android.sh               # aumenta la build, compila e installa con adb install -r
+tool/install_android.sh --no-install  # solo APK, da copiare sul telefono e aprire ("Aggiorna")
+```
+
+Non usare `flutter install`, che disinstalla prima la versione esistente. L'APK è firmato con `~/.android/debug.keystore`: conservane una copia, perché senza la stessa chiave Android non accetta l'aggiornamento.
+
 Le chiavi API sono salvate nel portachiavi di sistema (libsecret: serve gnome-keyring o KWallet attivo). Se non è disponibile, l'app ripiega sul database locale e lo segnala.
 
 Il database locale è in `~/.local/share/it.traincal.traincal/traincal.db`.
