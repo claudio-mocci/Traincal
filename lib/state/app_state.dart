@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/food_db.dart';
+import '../config/supabase_config.dart';
 import '../data/local_store.dart';
 import '../data/secrets.dart';
 import '../models/food.dart';
@@ -138,13 +139,11 @@ class AppState extends ChangeNotifier {
 
     if (testStore == null) {
       try {
-        await cloud.configure(
-          secrets[Secrets.supabaseUrl],
-          secrets[Secrets.supabaseKey],
-        );
+        await cloud.configure(supabaseUrl, supabaseKey);
       } catch (e) {
         lastError = 'Supabase: $e';
       }
+      notifyListeners();
       unawaited(syncAll());
       _timer = Timer.periodic(const Duration(minutes: 15), (_) => syncAll());
     }
@@ -718,12 +717,19 @@ class AppState extends ChangeNotifier {
   Future<void> saveSupabaseSettings(String url, String key) async {
     await secrets.set(Secrets.supabaseUrl, url);
     await secrets.set(Secrets.supabaseKey, key);
-    await cloud.configure(
-      secrets[Secrets.supabaseUrl],
-      secrets[Secrets.supabaseKey],
-    );
+    await cloud.configure(supabaseUrl, supabaseKey);
     notifyListeners();
   }
+
+  /// Progetto Supabase: quello incluso nell'app se presente, altrimenti
+  /// quello inserito a mano nelle impostazioni.
+  String? get supabaseUrl => SupabaseConfig.isBuiltIn
+      ? SupabaseConfig.url
+      : secrets[Secrets.supabaseUrl];
+
+  String? get supabaseKey => SupabaseConfig.isBuiltIn
+      ? SupabaseConfig.publishableKey
+      : secrets[Secrets.supabaseKey];
 
   Future<void> cloudSignIn(
     String email,

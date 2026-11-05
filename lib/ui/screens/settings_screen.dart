@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../config/supabase_config.dart';
 import '../../data/secrets.dart';
 import '../../services/claude_client.dart';
 import '../../state/app_state.dart';
@@ -147,30 +148,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Sincronizzazione (Supabase)',
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const Text(
-            'Sincronizza profilo, piani, ricette e menu tra i dispositivi. '
-            'Crea un progetto gratuito su supabase.com ed esegui lo script '
-            'supabase/schema.sql nel SQL editor.',
-          ),
-          TextField(
-            controller: _sbUrl,
-            decoration: const InputDecoration(
-              labelText: 'Project URL',
-              hintText: 'https://xxxx.supabase.co',
+          if (SupabaseConfig.isBuiltIn)
+            const Text(
+              'Sincronizza profilo, piani, ricette e menu tra i dispositivi. '
+              'Accedi con lo stesso account su ognuno.',
+            )
+          else ...[
+            const Text(
+              'Sincronizza profilo, piani, ricette e menu tra i dispositivi. '
+              'Crea un progetto gratuito su supabase.com ed esegui lo script '
+              'supabase/schema.sql nel SQL editor.',
             ),
-          ),
-          secret(_sbKey, 'Publishable (anon) key'),
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: () async {
-              await guarded(
-                context,
-                () => s.saveSupabaseSettings(_sbUrl.text, _sbKey.text),
-              );
-              if (context.mounted) setState(() {});
-            },
-            child: const Text('Salva'),
-          ),
+            TextField(
+              controller: _sbUrl,
+              decoration: const InputDecoration(
+                labelText: 'Project URL',
+                hintText: 'https://xxxx.supabase.co',
+              ),
+            ),
+            secret(_sbKey, 'Publishable (anon) key'),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: () async {
+                await guarded(
+                  context,
+                  () => s.saveSupabaseSettings(_sbUrl.text, _sbKey.text),
+                );
+                if (context.mounted) setState(() {});
+              },
+              child: const Text('Salva'),
+            ),
+          ],
           if (s.cloud.isConfigured) ...[
             const SizedBox(height: 16),
             if (user != null) ...[

@@ -35,6 +35,8 @@ Il database locale è in `~/.local/share/it.traincal.traincal/traincal.db`.
 | Claude | API key Anthropic (uso a consumo). Modello di default `claude-opus-5-5`, modificabile. |
 | Supabase | Progetto gratuito su supabase.com: esegui [supabase/schema.sql](supabase/schema.sql) nel SQL editor, poi inserisci Project URL e publishable key, e registrati o accedi dall'app. |
 
+C!4udioM0cc1 password db subabase
+
 ## Come funziona la stima
 
 1. **Metabolismo basale** con la formula di Mifflin-St Jeor, moltiplicato per il fattore di attività fuori dallo sport (1.2-1.55).
@@ -98,3 +100,4 @@ test/           test unitari e smoke test dei widget
 - La sync con Supabase è *last-write-wins* per record, su timestamp del dispositivo.
 - Le attività importate da Strava non sono leggibili dalle API di intervals.icu e vengono ignorate.
 - Windows: `flutter build windows` da una macchina Windows con Visual Studio. Android: `flutter build apk` con Android SDK.
+
