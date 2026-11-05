@@ -29,12 +29,16 @@ DateTime mondayOf(DateTime d) {
 
 class MealPrepPrefs {
   final int prepSessions;
+  final MealPrepStyle style;
+  final int mainVariety;
   final int breakfastVariety;
   final int snackVariety;
   final Set<String> excludedRecipeIds;
 
   const MealPrepPrefs({
     this.prepSessions = 2,
+    this.style = MealPrepStyle.recipes,
+    this.mainVariety = 3,
     this.breakfastVariety = 2,
     this.snackVariety = 2,
     this.excludedRecipeIds = const {},
@@ -42,11 +46,15 @@ class MealPrepPrefs {
 
   MealPrepPrefs copyWith({
     int? prepSessions,
+    MealPrepStyle? style,
+    int? mainVariety,
     int? breakfastVariety,
     int? snackVariety,
     Set<String>? excludedRecipeIds,
   }) => MealPrepPrefs(
     prepSessions: prepSessions ?? this.prepSessions,
+    style: style ?? this.style,
+    mainVariety: mainVariety ?? this.mainVariety,
     breakfastVariety: breakfastVariety ?? this.breakfastVariety,
     snackVariety: snackVariety ?? this.snackVariety,
     excludedRecipeIds: excludedRecipeIds ?? this.excludedRecipeIds,
@@ -54,6 +62,8 @@ class MealPrepPrefs {
 
   Map<String, dynamic> toJson() => {
     'prepSessions': prepSessions,
+    'style': style.name,
+    'mainVariety': mainVariety,
     'breakfastVariety': breakfastVariety,
     'snackVariety': snackVariety,
     'excludedRecipeIds': excludedRecipeIds.toList(),
@@ -61,6 +71,9 @@ class MealPrepPrefs {
 
   factory MealPrepPrefs.fromJson(Map<String, dynamic> j) => MealPrepPrefs(
     prepSessions: (j['prepSessions'] as num?)?.toInt() ?? 2,
+    style:
+        MealPrepStyle.values.asNameMap()[j['style']] ?? MealPrepStyle.recipes,
+    mainVariety: (j['mainVariety'] as num?)?.toInt() ?? 3,
     breakfastVariety: (j['breakfastVariety'] as num?)?.toInt() ?? 2,
     snackVariety: (j['snackVariety'] as num?)?.toInt() ?? 2,
     excludedRecipeIds: ((j['excludedRecipeIds'] as List?) ?? const [])
@@ -213,13 +226,25 @@ class AppState extends ChangeNotifier {
   WeekMealPlan? get weekMealPlan =>
       _mealPlans[selectedWeek.toIso8601String().substring(0, 10)];
 
+  /// Ricettario più le ricette generate per il piano della settimana
+  /// (combinazioni di componenti), per visualizzare menu e preparazione.
+  Map<String, Recipe> get planRecipesById {
+    final extra = weekMealPlan?.generatedRecipes ?? const [];
+    if (extra.isEmpty) return recipesById;
+    return {...recipesById, for (final r in extra) r.id: r};
+  }
+
   ShoppingList? get shoppingList {
     final plan = weekMealPlan;
     if (plan == null) return null;
-    return ShoppingList.fromPlan(plan, recipesById, foods);
+    return ShoppingList.fromPlan(plan, planRecipesById, foods);
   }
 
-  MealPlanner get planner => MealPlanner(foods: foods, recipes: recipes);
+  MealPlanner get planner => MealPlanner(
+    foods: foods,
+    recipes: recipes,
+    extraRecipes: weekMealPlan?.generatedRecipes ?? const [],
+  );
 
   bool get intervalsConfigured =>
       (secrets[Secrets.intervalsApiKey] ?? '').isNotEmpty;
@@ -525,6 +550,8 @@ class AppState extends ChangeNotifier {
       mealsPerDay: profile.mealsPerDay,
       options: MealPlanOptions(
         prepSessions: mealPrepPrefs.prepSessions,
+        style: mealPrepPrefs.style,
+        mainVariety: mealPrepPrefs.mainVariety,
         breakfastVariety: mealPrepPrefs.breakfastVariety,
         snackVariety: mealPrepPrefs.snackVariety,
         excludedRecipeIds: mealPrepPrefs.excludedRecipeIds,
@@ -537,43 +564,38 @@ class AppState extends ChangeNotifier {
     _changed();
   }
 
-  /// Sostituisce una ricetta in tutto il piano della settimana.
+  /// Sostituisce una ricetta in tutto il piano della settimana, mantenendo
+  /// le kcal dei pasti, e ricalcola le sessioni di preparazione.
   void swapRecipeInPlan(String fromId, String toId) {
     final plan = weekMealPlan;
     if (plan == null) return;
-    final from = recipesById[fromId]!;
-    final to = recipesById[toId]!;
+    final all = planRecipesById;
     final ratio =
-        from.macrosPerServing(foods).kcal / to.macrosPerServing(foods).kcal;
+        all[fromId]!.macrosPerServing(foods).kcal /
+        all[toId]!.macrosPerServing(foods).kcal;
     double adj(double s) => ((s * ratio) / 0.25).round() * 0.25;
-    final updated = WeekMealPlan(
-      weekStart: plan.weekStart,
+    final days = [
+      for (final d in plan.days)
+        DayMealPlan(
+          date: d.date,
+          target: d.target,
+          extras: d.extras,
+          meals: [
+            for (final m in d.meals)
+              m.recipeId == fromId
+                  ? MealEntry(m.slot, toId, adj(m.servings).clamp(0.5, 3))
+                  : m,
+          ],
+        ),
+    ];
+    final updated = plan.copyWith(
+      days: days,
       generatedAt: DateTime.now(),
-      days: [
-        for (final d in plan.days)
-          DayMealPlan(
-            date: d.date,
-            target: d.target,
-            extras: d.extras,
-            meals: [
-              for (final m in d.meals)
-                m.recipeId == fromId
-                    ? MealEntry(m.slot, toId, adj(m.servings).clamp(0.5, 3))
-                    : m,
-            ],
-          ),
-      ],
-      prepSessions: [
-        for (final s in plan.prepSessions)
-          s.recipeId == fromId
-              ? PrepSession(
-                  date: s.date,
-                  recipeId: toId,
-                  totalServings: adj(s.totalServings),
-                  coversDays: s.coversDays,
-                )
-              : s,
-      ],
+      prepSessions: MealPlanner.buildPrepSessions(
+        days,
+        MealPlanner.blocksOf(plan),
+        plan.combos,
+      ),
     );
     _mealPlans[updated.id] = updated;
     store.put(Collections.mealPlans, updated.id, updated.toJson());

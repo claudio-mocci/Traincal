@@ -48,7 +48,11 @@ Con *Pubblica su intervals.icu* i target giornalieri vengono scritti come **note
 
 ## Meal prep
 
-- La settimana è divisa in 1-3 blocchi, ognuno con una sessione di cucina il giorno prima. Ogni blocco ha una ricetta per i pranzi e una per le cene, con fonti proteiche diverse; si tiene conto dei giorni di conservazione in frigo e della congelabilità.
+- La settimana è divisa in 1-3 blocchi, ognuno con una sessione di cucina il giorno prima. Pranzi e cene si organizzano in due modi:
+  - **Piatti** (ricette alternate): ogni sessione prepara 2-4 ricette con fonti proteiche diverse, distribuite sui pasti del blocco. La stessa ricetta non compare mai in due pasti di fila e le ripetizioni sono bilanciate.
+  - **Componenti** da combinare: ogni sessione prepara a parte 1-2 basi (riso, farro, quinoa, patate...), 2-3 proteine e 2-3 verdure di stagione (catalogo in [lib/data/components.dart](lib/data/components.dart)). Ogni pasto è una combinazione diversa: la proteina cambia a ogni pasto, la base si alterna tra i giorni e gli abbinamenti già usati vengono evitati.
+
+  In entrambi i casi le preparazioni che si conservano meno (es. pesce, 2 giorni) finiscono nei primi giorni del blocco, e si evitano le proteine del blocco precedente.
 - **Stagionalità**: ogni alimento fresco ha i suoi mesi di stagione (Italia). Le ricette con frutta e verdura fuori stagione nei giorni del blocco sono fortemente penalizzate, quelle con prodotti di stagione leggermente favorite. A cavallo di due mesi conta la maggioranza dei giorni.
 - Colazioni e spuntini ruotano tra poche ricette.
 - Le porzioni (a passi di ¼) sono scalate sulle kcal del giorno; un piccolo set di integrazioni (yogurt greco, banana, pane, noci) chiude i gap di proteine e kcal.

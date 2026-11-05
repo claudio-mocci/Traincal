@@ -1,14 +1,21 @@
 import 'dart:math';
 
+import '../data/components.dart';
 import '../models/food.dart';
 import '../models/meal_plan.dart';
 import '../models/recipe.dart';
 import 'energy_calculator.dart';
 
 class MealPlanOptions {
-  /// Quante sessioni di cucina nella settimana (1-3). Ogni sessione prepara
-  /// una ricetta per i pranzi e una per le cene del suo blocco di giorni.
+  /// Quante sessioni di cucina nella settimana (1-3); ognuna copre un blocco
+  /// di giorni consecutivi.
   final int prepSessions;
+
+  final MealPrepStyle style;
+
+  /// Ricette diverse cucinate in ogni sessione (stile [MealPrepStyle.recipes]),
+  /// alternate tra pranzi e cene del blocco.
+  final int mainVariety;
   final int breakfastVariety;
   final int snackVariety;
   final Set<String> excludedRecipeIds;
@@ -20,6 +27,8 @@ class MealPlanOptions {
 
   const MealPlanOptions({
     this.prepSessions = 2,
+    this.style = MealPrepStyle.recipes,
+    this.mainVariety = 3,
     this.breakfastVariety = 2,
     this.snackVariety = 2,
     this.excludedRecipeIds = const {},
@@ -40,10 +49,24 @@ class MealPlanner {
   final Map<String, Food> foods;
   final List<Recipe> recipes;
 
-  MealPlanner({required this.foods, required this.recipes});
+  MealPlanner({
+    required this.foods,
+    required this.recipes,
+    List<Recipe> extraRecipes = const [],
+  }) : _byId = {
+         for (final r in recipes) r.id: r,
+         for (final r in extraRecipes) r.id: r,
+       };
 
-  late final Map<String, Recipe> _byId = {for (final r in recipes) r.id: r};
+  /// Ricettario più le ricette generate per il piano (combinazioni e
+  /// componenti), usate solo per la consultazione.
+  final Map<String, Recipe> _byId;
   final Map<String, Macros> _macros = {};
+
+  /// Combinazioni e componenti creati dall'ultima generazione.
+  final Map<String, Recipe> _generated = {};
+
+  Recipe? _lookup(String id) => _byId[id] ?? _generated[id];
 
   Macros _perServing(Recipe r) =>
       _macros.putIfAbsent(r.id, () => r.macrosPerServing(foods));
@@ -142,10 +165,9 @@ class MealPlanner {
       int minFridgeDays = 0,
     }) {
       final candidates = available.where((r) => r.type == type).toList();
-      final scored = candidates
-          .map((r) => (r: r, s: fitScore(r, when)))
-          .toList()
-        ..sort((a, b) => a.s.compareTo(b.s));
+      final scored =
+          candidates.map((r) => (r: r, s: fitScore(r, when))).toList()
+            ..sort((a, b) => a.s.compareTo(b.s));
       final chosen = <Recipe>[];
       final usedProteins = {...avoidProteins};
 
@@ -168,43 +190,118 @@ class MealPlanner {
     }
 
     final assignments = List.generate(days.length, (_) => <MealSlot, Recipe>{});
-    final prepSessions = <PrepSession>[];
+    final generated = <String, Recipe>{};
+    final combos = <String, List<String>>{};
 
-    // Pasti principali: una coppia pranzo/cena per blocco di meal prep.
+    // Pasti principali: per ogni blocco di meal prep, più ricette (o
+    // componenti) distribuite sui pasti senza ripetizioni ravvicinate.
     final mainSlots = shares.keys
         .where((s) => s.type == MealType.main)
         .toList();
     final blocks = splitBlocks(days.length, options.prepSessions);
     final usedMainIds = <String>{};
+    var previousProteins = <String>{};
     for (final block in blocks) {
-      final chosen = pick(
+      final meals = [
+        for (final d in block)
+          for (final slot in mainSlots) (day: d - block.first, slot: slot),
+      ];
+      final when = [for (final d in block) dayDates[d]];
+
+      if (options.style == MealPrepStyle.components) {
+        final picked = _pickComponents(
+          block.length,
+          when,
+          previousProteins,
+          rnd,
+        );
+        if (picked == null) {
+          warnings.add('Componenti insufficienti nel database alimenti.');
+          break;
+        }
+        final protein = scheduleMeals(
+          meals,
+          picked.proteins,
+          _componentLife,
+          avoidRepeat: true,
+        );
+        final proteinIds = [for (final p in protein) p.id];
+        final base = scheduleMeals(
+          meals,
+          picked.bases,
+          _componentLife,
+          companions: proteinIds,
+        );
+        final veg = scheduleMeals(
+          meals,
+          picked.vegetables,
+          _componentLife,
+          companions: proteinIds,
+        );
+        for (var i = 0; i < meals.length; i++) {
+          final combo = _combo(base[i], protein[i], veg[i]);
+          generated[combo.id] = combo;
+          combos[combo.id] = [base[i].id, protein[i].id, veg[i].id];
+          for (final c in [base[i], protein[i], veg[i]]) {
+            generated.putIfAbsent(c.id, c.toRecipe);
+          }
+          assignments[block[meals[i].day]][meals[i].slot] = combo;
+        }
+        previousProteins = {for (final p in picked.proteins) p.mainProtein};
+        continue;
+      }
+
+      // Almeno metà delle ricette deve durare tutto il blocco; le altre
+      // possono essere più delicate e finire nei primi giorni.
+      final k = options.mainVariety.clamp(1, meals.length);
+      final lasting = pick(
         MealType.main,
-        mainSlots.length,
-        when: [for (final d in block) dayDates[d]],
+        (k + 1) ~/ 2,
+        when: when,
         avoidIds: usedMainIds,
+        avoidProteins: previousProteins,
         minFridgeDays: block.length,
       );
+      final others = pick(
+        MealType.main,
+        k - lasting.length,
+        when: when,
+        avoidIds: {...usedMainIds, ...lasting.map((r) => r.id)},
+        avoidProteins: {
+          ...previousProteins,
+          ...lasting.map((r) => r.mainProtein),
+        },
+      );
+      final chosen = [...lasting, ...others.where((r) => !lasting.contains(r))];
       if (chosen.isEmpty) {
         warnings.add('Nessuna ricetta per pranzo/cena disponibile.');
         break;
       }
-      for (var i = 0; i < mainSlots.length; i++) {
-        final recipe = chosen[i % chosen.length];
-        usedMainIds.add(recipe.id);
-        for (final d in block) {
-          assignments[d][mainSlots[i]] = recipe;
-        }
-        if (recipe.fridgeDays < block.length) {
-          warnings.add(
-            recipe.freezable
-                ? '"${recipe.name}" si conserva ${recipe.fridgeDays} giorni: '
-                      'congela le porzioni oltre il giorno ${recipe.fridgeDays}.'
-                : '"${recipe.name}" si conserva solo ${recipe.fridgeDays} giorni '
-                      'ma copre ${block.length} giorni: valuta una sessione in più.',
-          );
+      final schedule = scheduleMeals(
+        meals,
+        chosen,
+        (r) => (fridgeDays: r.fridgeDays, freezable: r.freezable),
+        avoidRepeat: true,
+      );
+      for (var i = 0; i < meals.length; i++) {
+        final r = schedule[i];
+        assignments[block[meals[i].day]][meals[i].slot] = r;
+        final eatenAfter = meals[i].day + 1;
+        if (eatenAfter > r.fridgeDays) {
+          final w = r.freezable
+              ? '"${r.name}" si conserva ${r.fridgeDays} giorni: congela le '
+                    'porzioni da mangiare dopo.'
+              : '"${r.name}" viene mangiata $eatenAfter giorni dopo la '
+                    'preparazione ma si conserva ${r.fridgeDays} giorni.';
+          if (!warnings.contains(w)) warnings.add(w);
         }
       }
+      usedMainIds.addAll(chosen.map((r) => r.id));
+      previousProteins = {for (final r in chosen) r.mainProtein};
     }
+    _generated
+      ..clear()
+      ..addAll(generated);
 
     // Colazioni e spuntini: poche ricette che si alternano.
     void rotate(MealType type, int variety) {
@@ -231,27 +328,9 @@ class MealPlanner {
       dayPlans.add(_buildDay(days[d], assignments[d], shares));
     }
 
-    // Sessioni di preparazione: il giorno prima dell'inizio del blocco.
-    for (final block in blocks) {
-      final byRecipe = <String, double>{};
-      for (final d in block) {
-        for (final m in dayPlans[d].meals) {
-          if (m.slot.type != MealType.main) continue;
-          byRecipe[m.recipeId] = (byRecipe[m.recipeId] ?? 0) + m.servings;
-        }
-      }
-      final prepDate = dayDates[block.first].subtract(const Duration(days: 1));
-      byRecipe.forEach(
-        (id, servings) => prepSessions.add(
-          PrepSession(
-            date: prepDate,
-            recipeId: id,
-            totalServings: servings,
-            coversDays: [for (final d in block) dayDates[d]],
-          ),
-        ),
-      );
-    }
+    final prepSessions = buildPrepSessions(dayPlans, [
+      for (final b in blocks) [for (final d in b) dayDates[d]],
+    ], combos);
 
     return MealPlanResult(
       WeekMealPlan(
@@ -259,9 +338,204 @@ class MealPlanner {
         days: dayPlans,
         prepSessions: prepSessions,
         generatedAt: DateTime.now(),
+        generatedRecipes: generated.values.toList(),
+        combos: combos,
       ),
       warnings,
     );
+  }
+
+  static ({int fridgeDays, bool freezable}) _componentLife(MealComponent c) =>
+      (fridgeDays: c.fridgeDays, freezable: c.freezable);
+
+  /// Assegna un elemento a ogni pasto (in ordine di tempo) cercando la
+  /// massima varietà: penalizza l'elemento del pasto precedente (vietato se
+  /// [avoidRepeat]), quello dello stesso pasto del giorno prima e quelli
+  /// già usati spesso. Gli elementi che a quel punto del blocco non si
+  /// conservano più vengono scartati finché c'è un'alternativa.
+  /// [items] va in ordine di preferenza: a parità vince il primo.
+  ///
+  /// Con [companions] (l'elemento già scelto per ogni pasto, es. la
+  /// proteina) si penalizzano gli abbinamenti già usati, così le
+  /// combinazioni cambiano da un pasto all'altro.
+  static List<T> scheduleMeals<T>(
+    List<({int day, MealSlot slot})> meals,
+    List<T> items,
+    ({int fridgeDays, bool freezable}) Function(T) life, {
+    bool avoidRepeat = false,
+    List<Object>? companions,
+  }) {
+    assert(items.isNotEmpty);
+    final usage = List.filled(items.length, 0);
+    final result = <T>[];
+    final bySlotDay = <(MealSlot, int), int>{};
+    final pairs = <(Object, int), int>{};
+    int? previous;
+    for (var k = 0; k < meals.length; k++) {
+      final m = meals[k];
+      final companion = companions?[k];
+      var best = -1;
+      var bestScore = double.infinity;
+      for (var i = 0; i < items.length; i++) {
+        final l = life(items[i]);
+        final keeps = l.freezable || m.day + 1 <= l.fridgeDays;
+        var score = usage[i] * 10.0 + i * 0.1;
+        if (!keeps) score += 1000;
+        if (previous == i) score += avoidRepeat ? 500 : 4;
+        if (bySlotDay[(m.slot, m.day - 1)] == i) score += 7;
+        if (companion != null) score += (pairs[(companion, i)] ?? 0) * 12.0;
+        if (score < bestScore) {
+          bestScore = score;
+          best = i;
+        }
+      }
+      usage[best]++;
+      previous = best;
+      bySlotDay[(m.slot, m.day)] = best;
+      if (companion != null) {
+        pairs[(companion, best)] = (pairs[(companion, best)] ?? 0) + 1;
+      }
+      result.add(items[best]);
+    }
+    return result;
+  }
+
+  /// Sceglie basi, proteine e verdure per un blocco di [blockDays] giorni:
+  /// verdure di stagione, fonti proteiche diverse tra loro e (se possibile)
+  /// rispetto al blocco precedente, al massimo una proteina delicata (che non
+  /// dura tutto il blocco), messa per prima così finisce nei primi giorni.
+  ({
+    List<MealComponent> bases,
+    List<MealComponent> proteins,
+    List<MealComponent> vegetables,
+  })?
+  _pickComponents(
+    int blockDays,
+    List<DateTime> when,
+    Set<String> previousProteins,
+    Random rnd,
+  ) {
+    bool available(MealComponent c) {
+      final f = foods[c.foodId];
+      if (f == null || !foods.containsKey(MealComponent.oilFoodId)) {
+        return false;
+      }
+      return when.where(f.inSeason).length * 2 >= when.length;
+    }
+
+    List<MealComponent> shuffled(ComponentKind k) =>
+        mealComponents.where((c) => c.kind == k && available(c)).toList()
+          ..shuffle(rnd);
+
+    final bases = shuffled(ComponentKind.base).take(blockDays >= 3 ? 2 : 1);
+
+    final proteins = <MealComponent>[];
+    final wanted = min(3, max(2, blockDays));
+    var delicate = 0;
+    final candidates = shuffled(ComponentKind.protein)
+      ..sort(
+        (a, b) =>
+            (previousProteins.contains(a.mainProtein) ? 1 : 0) -
+            (previousProteins.contains(b.mainProtein) ? 1 : 0),
+      );
+    for (final c in candidates) {
+      if (proteins.length >= wanted) break;
+      if (proteins.any((p) => p.mainProtein == c.mainProtein)) continue;
+      final short = !c.freezable && c.fridgeDays < blockDays;
+      if (short && delicate >= 1) continue;
+      if (short) delicate++;
+      proteins.add(c);
+    }
+    proteins.sort((a, b) => _lifeOf(a).compareTo(_lifeOf(b)));
+
+    final vegetables = shuffled(ComponentKind.vegetable)
+        .take(blockDays >= 3 ? 3 : 2)
+        .toList();
+
+    if (bases.isEmpty || proteins.isEmpty || vegetables.isEmpty) return null;
+    return (bases: bases.toList(), proteins: proteins, vegetables: vegetables);
+  }
+
+  static int _lifeOf(MealComponent c) => c.freezable ? 99 : c.fridgeDays;
+
+  /// Il piatto composto da base, proteina e verdura.
+  Recipe _combo(MealComponent base, MealComponent protein, MealComponent veg) {
+    final grams = <String, double>{};
+    for (final c in [base, protein, veg]) {
+      final r = c.toRecipe();
+      for (final i in r.ingredients) {
+        grams[i.foodId] = (grams[i.foodId] ?? 0) + i.grams;
+      }
+    }
+    String name(MealComponent c) => c.label;
+    final title = name(protein);
+    return Recipe(
+      id: 'cmb_${base.id.substring(4)}_${protein.id.substring(4)}_${veg.id.substring(4)}',
+      name:
+          '${title[0].toUpperCase()}${title.substring(1)} con ${name(base)} e '
+          '${name(veg)}',
+      type: MealType.main,
+      ingredients: [for (final e in grams.entries) Ingredient(e.key, e.value)],
+      instructions:
+          'Componi il piatto con le preparazioni della sessione di meal prep: '
+          '${name(base)}, ${name(protein)} e ${name(veg)}. Scalda base e '
+          'proteina; le verdure si possono mangiare anche fredde.',
+      mainProtein: protein.mainProtein,
+      fridgeDays: [
+        base.fridgeDays,
+        protein.fridgeDays,
+        veg.fridgeDays,
+      ].reduce(min),
+      freezable: false,
+      prepMinutes: 5,
+      tags: const ['combinazione'],
+      source: RecipeSource.builtin,
+    );
+  }
+
+  /// Sessioni di cucina, una per blocco (la sera prima del primo giorno):
+  /// per ogni ricetta, o per ogni componente delle combinazioni, le porzioni
+  /// totali da preparare per i pranzi e le cene del blocco.
+  static List<PrepSession> buildPrepSessions(
+    List<DayMealPlan> days,
+    List<List<DateTime>> blocks,
+    Map<String, List<String>> combos,
+  ) {
+    final sessions = <PrepSession>[];
+    for (final block in blocks) {
+      if (block.isEmpty) continue;
+      final servings = <String, double>{};
+      for (final d in days.where((d) => block.contains(d.date))) {
+        for (final m in d.meals.where((m) => m.slot.type == MealType.main)) {
+          for (final id in combos[m.recipeId] ?? [m.recipeId]) {
+            servings[id] = (servings[id] ?? 0) + m.servings;
+          }
+        }
+      }
+      final prepDate = block.first.subtract(const Duration(days: 1));
+      servings.forEach(
+        (id, total) => sessions.add(
+          PrepSession(
+            date: prepDate,
+            recipeId: id,
+            totalServings: total,
+            coversDays: block,
+          ),
+        ),
+      );
+    }
+    return sessions;
+  }
+
+  /// I blocchi di giorni di un piano esistente, ricavati dalle sessioni.
+  static List<List<DateTime>> blocksOf(WeekMealPlan plan) {
+    final byDate = <DateTime, List<DateTime>>{};
+    for (final s in plan.prepSessions) {
+      byDate.putIfAbsent(s.date, () => s.coversDays);
+    }
+    return (byDate.entries.toList()..sort((a, b) => a.key.compareTo(b.key)))
+        .map((e) => e.value)
+        .toList();
   }
 
   static double _round(double v, double step) => (v / step).round() * step;
@@ -280,7 +554,7 @@ class MealPlanner {
     Macros total(List<MealEntry> ms) {
       var t = Macros.zero;
       for (final m in ms) {
-        t = t + _perServing(_byId[m.recipeId]!).scale(m.servings);
+        t = t + _perServing(_lookup(m.recipeId)!).scale(m.servings);
       }
       for (final e in extras) {
         t = t + foods[e.foodId]!.forGrams(e.grams);
@@ -358,7 +632,7 @@ class MealPlanner {
   Macros dayTotal(DayMealPlan d) {
     var t = Macros.zero;
     for (final m in d.meals) {
-      final r = _byId[m.recipeId];
+      final r = _lookup(m.recipeId);
       if (r != null) t = t + _perServing(r).scale(m.servings);
     }
     for (final e in d.extras) {

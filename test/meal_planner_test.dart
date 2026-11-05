@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:traincal/models/meal_plan.dart';
 import 'package:traincal/models/profile.dart';
 import 'package:traincal/models/recipe.dart';
 import 'package:traincal/models/workout.dart';
@@ -100,27 +103,220 @@ void main() {
     }
   });
 
-  test('meal prep: stessa ricetta nel blocco, ricette diverse tra blocchi', () {
+  /// Pranzi e cene in ordine di tempo: (giorno, ricetta).
+  List<({int day, String id})> mainMeals(WeekMealPlan plan) => [
+    for (var d = 0; d < plan.days.length; d++)
+      for (final m in plan.days[d].meals)
+        if (m.slot.type == MealType.main) (day: d, id: m.recipeId),
+  ];
+
+  test('ricette alternate: varietà dentro ogni sessione', () {
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+    for (final seed in [1, 2, 3, 4, 5]) {
+      final result = planner.generate(
+        weekStart: monday,
+        days: energy,
+        mealsPerDay: 4,
+        options: MealPlanOptions(prepSessions: 2, mainVariety: 3, seed: seed),
+      );
+      final plan = result.plan;
+      final meals = mainMeals(plan);
+      for (final block in [
+        [0, 1, 2, 3],
+        [4, 5, 6],
+      ]) {
+        final inBlock = meals.where((m) => block.contains(m.day)).toList();
+        final ids = inBlock.map((m) => m.id).toList();
+        expect(ids.toSet(), hasLength(3), reason: 'seed $seed');
+        // Mai la stessa ricetta due pasti di fila.
+        for (var i = 1; i < ids.length; i++) {
+          expect(ids[i], isNot(ids[i - 1]), reason: 'seed $seed: $ids');
+        }
+        // Distribuzione equilibrata: nessuna ricetta oltre ceil(n/3).
+        for (final id in ids.toSet()) {
+          expect(
+            ids.where((x) => x == id).length,
+            lessThanOrEqualTo((ids.length / 3).ceil()),
+          );
+        }
+        // Si mangia entro i giorni di conservazione (o è congelabile).
+        for (final m in inBlock) {
+          final r = recipes[m.id]!;
+          expect(
+            r.freezable || m.day - block.first + 1 <= r.fridgeDays,
+            isTrue,
+            reason: '${r.id} giorno ${m.day}',
+          );
+        }
+      }
+      // Pranzi di giorni consecutivi diversi.
+      String lunch(int d) => plan.days[d].meals
+          .firstWhere((m) => m.slot == MealSlot.lunch)
+          .recipeId;
+      for (var d = 1; d < 7; d++) {
+        expect(lunch(d), isNot(lunch(d - 1)), reason: 'seed $seed, giorno $d');
+      }
+      // Una sessione per blocco, la sera prima, con 3 ricette ciascuna.
+      expect(plan.prepSessions, hasLength(6));
+      expect(
+        plan.prepSessions.first.date,
+        monday.subtract(const Duration(days: 1)),
+      );
+    }
+  });
+
+  test('componenti: basi e proteine combinate in modo diverso ogni pasto', () {
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+    for (final seed in [1, 2, 3, 4, 5]) {
+      final plan = planner
+          .generate(
+            weekStart: monday,
+            days: energy,
+            mealsPerDay: 4,
+            options: MealPlanOptions(
+              style: MealPrepStyle.components,
+              seed: seed,
+            ),
+          )
+          .plan;
+      final all = {...recipes, for (final r in plan.generatedRecipes) r.id: r};
+      final meals = mainMeals(plan);
+      expect(plan.combos.keys, containsAll(meals.map((m) => m.id).toSet()));
+
+      String protein(String id) => plan.combos[id]![1];
+      for (var i = 1; i < meals.length; i++) {
+        expect(
+          protein(meals[i].id),
+          isNot(protein(meals[i - 1].id)),
+          reason: 'seed $seed: proteina ripetuta al pasto $i',
+        );
+      }
+      // In ogni blocco di 4 giorni: 2 basi, 3 proteine, 3 verdure e quasi
+      // ogni pasto è una combinazione diversa.
+      final first = meals.where((m) => m.day < 4).map((m) => m.id).toList();
+      expect(first.map((id) => plan.combos[id]![0]).toSet(), hasLength(2));
+      expect(first.map(protein).toSet(), hasLength(3));
+      expect(first.toSet().length, greaterThanOrEqualTo(6));
+      // A pranzo la base cambia da un giorno all'altro.
+      final lunchBases = [
+        for (var d = 0; d < 4; d++)
+          plan.combos[plan.days[d].meals
+              .firstWhere((m) => m.slot == MealSlot.lunch)
+              .recipeId]![0],
+      ];
+      for (var d = 1; d < 4; d++) {
+        expect(lunchBases[d], isNot(lunchBases[d - 1]), reason: '$lunchBases');
+      }
+
+      // Verdure di stagione (novembre).
+      for (final id in plan.combos.values.map((c) => c[2]).toSet()) {
+        final food = foods[all[id]!.ingredients.first.foodId]!;
+        expect(food.inSeason(monday), isTrue, reason: food.id);
+      }
+
+      // Le proteine delicate si mangiano entro la loro durata.
+      for (final m in meals) {
+        final p = all[protein(m.id)]!;
+        final dayInBlock = m.day < 4 ? m.day : m.day - 4;
+        expect(
+          p.freezable || dayInBlock + 1 <= p.fridgeDays,
+          isTrue,
+          reason: '${p.id} giorno ${m.day}',
+        );
+      }
+
+      // Le sessioni elencano i componenti, con le porzioni dei pasti.
+      for (final ps in plan.prepSessions) {
+        expect(ps.recipeId, startsWith('cmp_'));
+        final expected = plan.days
+            .where((d) => ps.coversDays.contains(d.date))
+            .expand((d) => d.meals)
+            .where(
+              (m) => plan.combos[m.recipeId]?.contains(ps.recipeId) ?? false,
+            )
+            .fold<double>(0, (a, m) => a + m.servings);
+        expect(ps.totalServings, closeTo(expected, 0.001));
+      }
+
+      // Kcal rispettate e lista della spesa completa.
+      final withExtra = MealPlanner(
+        foods: foods,
+        recipes: dbRecipes,
+        extraRecipes: plan.generatedRecipes,
+      );
+      for (final d in plan.days) {
+        final total = withExtra.dayTotal(d);
+        expect(
+          (total.kcal - d.target.kcal).abs() / d.target.kcal,
+          lessThan(0.10),
+        );
+      }
+      final list = ShoppingList.fromPlan(plan, all, foods);
+      final names = list.byCategory.values
+          .expand((l) => l)
+          .map((i) => i.food.id);
+      expect(names, contains('f_olio'));
+    }
+  });
+
+  test('il piano a componenti sopravvive al salvataggio', () {
     final planner = MealPlanner(foods: foods, recipes: dbRecipes);
     final plan = planner
         .generate(
           weekStart: monday,
           days: energy,
-          mealsPerDay: 4,
-          options: const MealPlanOptions(prepSessions: 2, seed: 7),
+          mealsPerDay: 3,
+          options: const MealPlanOptions(
+            style: MealPrepStyle.components,
+            seed: 9,
+          ),
         )
         .plan;
-    String lunch(int d) =>
-        plan.days[d].meals.firstWhere((m) => m.slot == MealSlot.lunch).recipeId;
-    expect({lunch(0), lunch(1), lunch(2), lunch(3)}, hasLength(1));
-    expect({lunch(4), lunch(5), lunch(6)}, hasLength(1));
-    expect(lunch(0), isNot(lunch(4)));
-    // 2 sessioni × (pranzo + cena)
-    expect(plan.prepSessions, hasLength(4));
-    expect(
-      plan.prepSessions.first.date,
-      monday.subtract(const Duration(days: 1)),
+    final copy = WeekMealPlan.fromJson(
+      jsonDecode(jsonEncode(plan.toJson())) as Map<String, dynamic>,
     );
+    expect(copy.combos, plan.combos);
+    expect(
+      copy.generatedRecipes.map((r) => r.id),
+      plan.generatedRecipes.map((r) => r.id),
+    );
+    expect(MealPlanner.blocksOf(copy), hasLength(2));
+    final rebuilt = MealPlanner.buildPrepSessions(
+      copy.days,
+      MealPlanner.blocksOf(copy),
+      copy.combos,
+    );
+    expect(
+      rebuilt.map((p) => '${p.recipeId}:${p.totalServings}').toSet(),
+      plan.prepSessions.map((p) => '${p.recipeId}:${p.totalServings}').toSet(),
+    );
+  });
+
+  test('scheduleMeals evita ripetizioni e rispetta la conservazione', () {
+    final meals = [
+      for (var d = 0; d < 4; d++)
+        for (final s in [MealSlot.lunch, MealSlot.dinner]) (day: d, slot: s),
+    ];
+    // "pesce" dura 2 giorni: deve comparire solo nei giorni 0-1.
+    final items = ['pesce', 'pollo', 'legumi'];
+    final life = {
+      'pesce': (fridgeDays: 2, freezable: false),
+      'pollo': (fridgeDays: 4, freezable: false),
+      'legumi': (fridgeDays: 5, freezable: false),
+    };
+    final out = MealPlanner.scheduleMeals(
+      meals,
+      items,
+      (x) => life[x]!,
+      avoidRepeat: true,
+    );
+    for (var i = 1; i < out.length; i++) {
+      expect(out[i], isNot(out[i - 1]));
+    }
+    for (var i = 0; i < out.length; i++) {
+      if (out[i] == 'pesce') expect(meals[i].day, lessThan(2));
+    }
+    expect(out.toSet(), hasLength(3));
   });
 
   test('stesso seed, stesso piano', () {

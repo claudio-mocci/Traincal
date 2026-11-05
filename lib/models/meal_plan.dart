@@ -99,6 +99,27 @@ class PrepSession {
   );
 }
 
+/// Come si organizzano pranzi e cene della settimana.
+enum MealPrepStyle {
+  /// Più ricette per sessione di cucina, alternate tra i pasti.
+  recipes,
+
+  /// Basi, proteine e verdure cucinate a parte e combinate ogni pasto.
+  components,
+}
+
+extension MealPrepStyleLabel on MealPrepStyle {
+  String get label => switch (this) {
+    MealPrepStyle.recipes => 'Ricette alternate',
+    MealPrepStyle.components => 'Componenti da combinare',
+  };
+
+  String get shortLabel => switch (this) {
+    MealPrepStyle.recipes => 'Piatti',
+    MealPrepStyle.components => 'Componenti',
+  };
+}
+
 class WeekMealPlan {
   /// Lunedì della settimana; usato anche come id del documento.
   final DateTime weekStart;
@@ -106,20 +127,45 @@ class WeekMealPlan {
   final List<PrepSession> prepSessions;
   final DateTime generatedAt;
 
+  /// Ricette create per questo piano (combinazioni e singoli componenti),
+  /// che non fanno parte del ricettario.
+  final List<Recipe> generatedRecipes;
+
+  /// Per ogni combinazione, i componenti da cucinare (id di ricette in
+  /// [generatedRecipes]).
+  final Map<String, List<String>> combos;
+
   const WeekMealPlan({
     required this.weekStart,
     required this.days,
     required this.prepSessions,
     required this.generatedAt,
+    this.generatedRecipes = const [],
+    this.combos = const {},
   });
 
   String get id => weekStart.toIso8601String().substring(0, 10);
+
+  WeekMealPlan copyWith({
+    List<DayMealPlan>? days,
+    List<PrepSession>? prepSessions,
+    DateTime? generatedAt,
+  }) => WeekMealPlan(
+    weekStart: weekStart,
+    days: days ?? this.days,
+    prepSessions: prepSessions ?? this.prepSessions,
+    generatedAt: generatedAt ?? this.generatedAt,
+    generatedRecipes: generatedRecipes,
+    combos: combos,
+  );
 
   Map<String, dynamic> toJson() => {
     'weekStart': weekStart.toIso8601String(),
     'days': days.map((e) => e.toJson()).toList(),
     'prepSessions': prepSessions.map((e) => e.toJson()).toList(),
     'generatedAt': generatedAt.toIso8601String(),
+    'generatedRecipes': generatedRecipes.map((r) => r.toJson()).toList(),
+    'combos': combos,
   };
 
   factory WeekMealPlan.fromJson(Map<String, dynamic> j) => WeekMealPlan(
@@ -131,5 +177,12 @@ class WeekMealPlan {
         .map((e) => PrepSession.fromJson(e as Map<String, dynamic>))
         .toList(),
     generatedAt: DateTime.parse(j['generatedAt'] as String),
+    generatedRecipes: (j['generatedRecipes'] as List? ?? const [])
+        .map((e) => Recipe.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    combos: {
+      for (final e in ((j['combos'] as Map?) ?? const {}).entries)
+        e.key as String: (e.value as List).cast<String>(),
+    },
   );
 }

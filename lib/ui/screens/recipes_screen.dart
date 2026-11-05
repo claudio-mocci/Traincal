@@ -77,7 +77,8 @@ class _RecipesScreenState extends State<RecipesScreen> {
             FilterChip(
               avatar: const Icon(Icons.eco_outlined, size: 18),
               label: const Text('Di stagione'),
-              tooltip: 'Nessun ingrediente fuori stagione nella settimana '
+              tooltip:
+                  'Nessun ingrediente fuori stagione nella settimana '
                   'selezionata',
               selected: _seasonOnly,
               onSelected: (v) => setState(() => _seasonOnly = v),
@@ -220,7 +221,10 @@ Future<void> showRecipeDetail(BuildContext context, Recipe r) {
                   runSpacing: 4,
                   children: [
                     for (final t in r.tags)
-                      Chip(label: Text(t), visualDensity: VisualDensity.compact),
+                      Chip(
+                        label: Text(t),
+                        visualDensity: VisualDensity.compact,
+                      ),
                   ],
                 ),
               ],

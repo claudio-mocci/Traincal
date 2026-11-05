@@ -76,7 +76,7 @@ class _OptionsBar extends StatelessWidget {
     ) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label),
+        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
         IconButton(
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.remove_circle_outline),
@@ -104,6 +104,33 @@ class _OptionsBar extends StatelessWidget {
             3,
             (v) => s.saveMealPrepPrefs(p.copyWith(prepSessions: v)),
           ),
+          SegmentedButton<MealPrepStyle>(
+            segments: [
+              for (final st in MealPrepStyle.values)
+                ButtonSegment(
+                  value: st,
+                  label: Text(st.shortLabel),
+                  tooltip: st.label,
+                  icon: Icon(
+                    st == MealPrepStyle.recipes
+                        ? Icons.restaurant_menu
+                        : Icons.dashboard_customize,
+                  ),
+                ),
+            ],
+            selected: {p.style},
+            showSelectedIcon: false,
+            onSelectionChanged: (v) =>
+                s.saveMealPrepPrefs(p.copyWith(style: v.first)),
+          ),
+          if (p.style == MealPrepStyle.recipes)
+            stepper(
+              'Ricette per sessione',
+              p.mainVariety,
+              2,
+              4,
+              (v) => s.saveMealPrepPrefs(p.copyWith(mainVariety: v)),
+            ),
           stepper(
             'Colazioni diverse',
             p.breakfastVariety,
@@ -136,7 +163,7 @@ class _MenuTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final recipes = s.recipesById;
+    final recipes = s.planRecipesById;
     final planner = s.planner;
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
@@ -299,7 +326,7 @@ class _PrepTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final recipes = s.recipesById;
+    final recipes = s.planRecipesById;
     final dates = plan.prepSessions.map((p) => p.date).toSet().toList()..sort();
     return ListView(
       padding: const EdgeInsets.only(bottom: 24),
@@ -316,7 +343,8 @@ class _PrepTab extends StatelessWidget {
                   subtitle: Text(
                     '${fmtServings(ps.totalServings)} porzioni per '
                     '${ps.coversDays.map(dayFmt.format).join(', ')}\n'
-                    'Frigo ${r.fridgeDays} gg${r.freezable ? ' · congelabile' : ''} · ${r.prepMinutes} min',
+                    'Frigo ${r.fridgeDays} gg${r.freezable ? ' · congelabile' : ''}'
+                    '${r.prepMinutes > 0 ? ' · ${r.prepMinutes} min' : ''}',
                   ),
                   childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   expandedCrossAxisAlignment: CrossAxisAlignment.start,
@@ -334,6 +362,14 @@ class _PrepTab extends StatelessWidget {
                 ),
               ),
         ],
+        if (plan.combos.isNotEmpty)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Text(
+              'Basi, proteine e verdure si conservano in contenitori separati: '
+              'il menu indica come combinarle pasto per pasto.',
+            ),
+          ),
         const Padding(
           padding: EdgeInsets.all(16),
           child: Text(
