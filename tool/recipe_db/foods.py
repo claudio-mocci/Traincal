@@ -291,6 +291,13 @@ FOODS: list[Food] = [
     Food('f_edamame', 'Edamame surgelati', Z, 121, 12, 9, 5, pack=400),
     Food('f_spinaci_surg', 'Spinaci surgelati', Z, 25, 3, 1.5, 0.4, pack=450),
     Food('f_minestrone_surg', 'Verdure per minestrone surgelate', Z, 35, 2, 5.5, 0.3, pack=1000),
+    # Gelateria: gusti a base latte (fiordilatte, nocciola, cioccolato...) e
+    # alla frutta (sorbetti), cono in cialda.
+    Food('f_gelato_crema', 'Gelato artigianale (gusti crema)', Z, 210, 4.5, 26, 10,
+         diet='dairy'),
+    Food('f_gelato_frutta', 'Gelato artigianale (gusti frutta)', Z, 120, 0.5, 29, 0.3),
+    Food('f_cono', 'Cono in cialda', G, 400, 8, 80, 5, unit=12, unit_name='cono',
+         gluten=True),
 ]
 
 FOODS_BY_ID = {f.id: f for f in FOODS}

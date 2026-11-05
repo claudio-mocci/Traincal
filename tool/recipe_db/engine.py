@@ -85,6 +85,9 @@ class Recipe:
     tags: list[str]
     template: str = ''
     opt_keys: tuple[str, ...] = ()
+    # Porzioni sempre uguali nel menu (es. un cono gelato), invece di
+    # adattarle alle kcal del giorno.
+    fixed_servings: float | None = None
 
     def macros(self):
         k = p = c = f = 0.0
@@ -248,6 +251,9 @@ def tags_for(r: Recipe) -> list[str]:
 
 def instructions(r: Recipe) -> str:
     lines = [f'{i}. {s}' for i, s in enumerate(r.steps, 1)]
+    # fridge = 0: da consumare subito (es. gelato), niente nota sul frigo.
+    if r.fridge == 0:
+        return '\n'.join(lines)
     keep = f'Meal prep: si conserva {r.fridge} giorn{"o" if r.fridge == 1 else "i"} in frigo in contenitori ermetici'
     keep += '; si può congelare in porzioni.' if r.freeze else '.'
     return '\n'.join(lines + [keep])

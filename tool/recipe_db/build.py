@@ -26,7 +26,7 @@ from foods import FOODS, FOODS_BY_ID, register  # noqa: E402
 from legacy import LEGACY  # noqa: E402
 
 OUT = HERE.parent.parent / 'assets' / 'db'
-TARGET = {MAIN: 620, BREAKFAST: 190, SNACK: 190}
+TARGET = {MAIN: 620, BREAKFAST: 190, SNACK: 191}
 
 
 def load_templates(only: str | None = None):
@@ -52,7 +52,8 @@ def legacy_recipes() -> list[Recipe]:
             id=r['id'], name=r['name'], type=r['type'],
             ingredients={k: round(v) for k, v in r['ingredients'].items()},
             steps=steps, protein=r['protein'], fridge=r['fridge'], freeze=r['freeze'],
-            minutes=r['minutes'], tags=[], template='legacy'))
+            minutes=r['minutes'], tags=[], template='legacy',
+            fixed_servings=r.get('fixedServings')))
     return out
 
 
@@ -82,6 +83,7 @@ def recipe_json(r: Recipe):
         'prepMinutes': r.minutes,
         'tags': tags_for(r),
         'source': 'builtin',
+        **({'fixedServings': r.fixed_servings} if r.fixed_servings else {}),
     }
 
 

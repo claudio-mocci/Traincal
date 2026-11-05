@@ -395,8 +395,8 @@ void main() {
     expect(zucchine.quantityLabel, '530 g');
   });
 
-  test('database: 1000 ricette complete con id unici', () {
-    expect(dbRecipes, hasLength(1000));
+  test('database: 1001 ricette complete con id unici', () {
+    expect(dbRecipes, hasLength(1001));
     expect(recipes, hasLength(dbRecipes.length));
     for (final t in MealType.values) {
       expect(dbRecipes.where((r) => r.type == t), isNotEmpty);
@@ -694,5 +694,35 @@ void main() {
       );
       expect(copy.freeSlots, fri.freeSlots);
     });
+  });
+
+  test('gelato in cono: spuntino a porzione fissa', () {
+    final gelato = recipes['r_gelato_cono']!;
+    expect(gelato.type, MealType.snack);
+    expect(gelato.fixedServings, 1);
+    expect(gelato.fridgeDays, 0);
+    final m = gelato.macrosPerServing(foods);
+    expect(m.kcal, closeTo(255, 5));
+    // Fissato tra gli spuntini: nel menu è sempre un cono, mai scalato.
+    final planner = MealPlanner(foods: foods, recipes: dbRecipes);
+    final plan = planner
+        .generate(
+          weekStart: monday,
+          days: energy,
+          mealsPerDay: 4,
+          options: const MealPlanOptions(
+            snackVariety: 1,
+            pinnedRecipeIds: {'r_gelato_cono'},
+            seed: 2,
+          ),
+        )
+        .plan;
+    for (final d in plan.days) {
+      final snack = d.meals.firstWhere(
+        (x) => x.slot == MealSlot.afternoonSnack,
+      );
+      expect(snack.recipeId, 'r_gelato_cono');
+      expect(snack.servings, 1);
+    }
   });
 }

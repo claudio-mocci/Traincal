@@ -377,7 +377,8 @@ Future<void> showRecipeDetail(BuildContext context, Recipe r) {
               MacroRow(m),
               const SizedBox(height: 12),
               Text(
-                '${r.type.label} · ${r.prepMinutes} min · frigo ${r.fridgeDays} gg'
+                '${r.type.label} · ${r.prepMinutes} min · '
+                '${r.fridgeDays == 0 ? 'da consumare subito' : 'frigo ${r.fridgeDays} gg'}'
                 '${r.freezable ? ' · congelabile' : ''}',
               ),
               if (r.tags.isNotEmpty) ...[
@@ -569,6 +570,7 @@ class _RecipeEditorState extends State<RecipeEditor> {
                     labelText: 'Giorni in frigo',
                   ),
                   items: [
+                    const DropdownMenuItem(value: 0, child: Text('Subito')),
                     for (var i = 1; i <= 6; i++)
                       DropdownMenuItem(value: i, child: Text('$i')),
                   ],

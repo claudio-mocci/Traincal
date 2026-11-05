@@ -80,7 +80,7 @@ Nella schermata Ricette si filtra per tipo, *di stagione* (rispetto alla settima
 
 ## Database di ricette e alimenti
 
-L'app include **1000 ricette** pensate per il meal prep (620 pranzi/cene, 190 colazioni, 190 spuntini) e circa 210 alimenti, in [assets/db/](assets/db/) come JSON riusabile anche fuori dall'app:
+L'app include **1001 ricette** pensate per il meal prep (620 pranzi/cene, 190 colazioni, 191 spuntini) e circa 210 alimenti, in [assets/db/](assets/db/) come JSON riusabile anche fuori dall'app:
 
 - `foods.json`: valori per 100 g, reparto, pezzo e confezione tipici, `seasonMonths` (vuoto = tutto l'anno);
 - `recipes.json`: ingredienti in grammi per porzione, procedimento a passi, proteina principale, giorni in frigo, congelabilità, tempo, tag (`vegetariano`, `vegano`, `senza glutine`, `senza lattosio`, `forno`, `zuppa`...).

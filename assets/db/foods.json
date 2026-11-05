@@ -3473,6 +3473,51 @@
   "seasonMonths": []
  },
  {
+  "id": "f_gelato_crema",
+  "name": "Gelato artigianale (gusti crema)",
+  "category": "frozen",
+  "per100g": {
+   "kcal": 210,
+   "protein": 4.5,
+   "carbs": 26,
+   "fat": 10
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_gelato_frutta",
+  "name": "Gelato artigianale (gusti frutta)",
+  "category": "frozen",
+  "per100g": {
+   "kcal": 120,
+   "protein": 0.5,
+   "carbs": 29,
+   "fat": 0.3
+  },
+  "unitGrams": null,
+  "unitName": null,
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
+  "id": "f_cono",
+  "name": "Cono in cialda",
+  "category": "grains",
+  "per100g": {
+   "kcal": 400,
+   "protein": 8,
+   "carbs": 80,
+   "fat": 5
+  },
+  "unitGrams": 12,
+  "unitName": "cono",
+  "packageGrams": null,
+  "seasonMonths": []
+ },
+ {
   "id": "f_amido_mais",
   "name": "Amido di mais (maizena)",
   "category": "pantry",

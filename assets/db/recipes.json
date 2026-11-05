@@ -984,6 +984,35 @@
   "source": "builtin"
  },
  {
+  "id": "r_gelato_cono",
+  "name": "Gelato artigianale in cono, due gusti",
+  "type": "snack",
+  "ingredients": [
+   {
+    "foodId": "f_cono",
+    "grams": 12
+   },
+   {
+    "foodId": "f_gelato_crema",
+    "grams": 70
+   },
+   {
+    "foodId": "f_gelato_frutta",
+    "grams": 50
+   }
+  ],
+  "instructions": "1. In gelateria scegli un cono piccolo con due gusti: uno a base latte (fiordilatte, nocciola, cioccolato...) e uno alla frutta.\n2. Le grammature corrispondono a un cono piccolo, circa 120 g di gelato.\n3. Con due gusti crema le calorie salgono di circa 50 kcal.",
+  "mainProtein": "latticini",
+  "fridgeDays": 0,
+  "freezable": false,
+  "prepMinutes": 5,
+  "tags": [
+   "vegetariano"
+  ],
+  "source": "builtin",
+  "fixedServings": 1
+ },
+ {
   "id": "r_bowl_forno_miglio_vitello_zucca",
   "name": "Bowl di miglio con vitello e zucca al forno",
   "type": "main",
