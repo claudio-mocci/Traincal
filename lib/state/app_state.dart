@@ -291,6 +291,18 @@ class AppState extends ChangeNotifier {
     lastError = null;
     notifyListeners();
     final errors = <String>[];
+    // Prima Supabase: un dispositivo nuovo riceve così anche la API key di
+    // intervals.icu e scarica gli allenamenti nello stesso giro.
+    if (cloud.user != null) {
+      try {
+        final changed = await cloud.sync();
+        if (changed > 0) _loadFromStore();
+        if (await applySyncedCredentials()) await cloud.sync();
+        lastCloudSync = DateTime.now();
+      } catch (e) {
+        errors.add('Supabase: $e');
+      }
+    }
     if (intervalsConfigured) {
       try {
         await _syncIntervals();
@@ -298,19 +310,43 @@ class AppState extends ChangeNotifier {
         errors.add(e.toString());
       }
     }
-    if (cloud.user != null) {
-      try {
-        final changed = await cloud.sync();
-        if (changed > 0) _loadFromStore();
-        lastCloudSync = DateTime.now();
-      } catch (e) {
-        errors.add('Supabase: $e');
-      }
-    }
     lastError = errors.isEmpty ? null : errors.join('\n');
     syncing = false;
     notifyListeners();
   }
+
+  static const _intervalsCredentials = 'intervals';
+
+  /// Allinea la API key di intervals.icu locale con quella sincronizzata:
+  /// se il record remoto è diverso aggiorna il portachiavi; se il record non
+  /// esiste ancora e qui c'è una chiave, la carica. Ritorna true se il record
+  /// va inviato a Supabase.
+  @visibleForTesting
+  Future<bool> applySyncedCredentials() async {
+    final rec = store.get(Collections.credentials, _intervalsCredentials);
+    final localKey = secrets[Secrets.intervalsApiKey] ?? '';
+    if (rec == null) {
+      if (localKey.isEmpty) return false;
+      _putIntervalsCredentials(
+        localKey,
+        secrets[Secrets.intervalsAthleteId] ?? '0',
+      );
+      return true;
+    }
+    final key = rec['apiKey'] as String? ?? '';
+    final athlete = rec['athleteId'] as String? ?? '0';
+    if (key != localKey) await secrets.set(Secrets.intervalsApiKey, key);
+    if (athlete != (secrets[Secrets.intervalsAthleteId] ?? '0')) {
+      await secrets.set(Secrets.intervalsAthleteId, athlete);
+    }
+    return false;
+  }
+
+  void _putIntervalsCredentials(String apiKey, String athleteId) => store.put(
+    Collections.credentials,
+    _intervalsCredentials,
+    {'apiKey': apiKey, 'athleteId': athleteId},
+  );
 
   Future<void> _syncIntervals() async {
     final client = _intervals();
@@ -705,7 +741,13 @@ class AppState extends ChangeNotifier {
       Secrets.intervalsAthleteId,
       athleteId.isEmpty ? '0' : athleteId,
     );
-    notifyListeners();
+    // Anche una chiave vuota si sincronizza: rimuove la chiave dagli altri
+    // dispositivi.
+    _putIntervalsCredentials(
+      secrets[Secrets.intervalsApiKey] ?? '',
+      secrets[Secrets.intervalsAthleteId] ?? '0',
+    );
+    _changed();
   }
 
   Future<void> saveClaudeSettings(String apiKey, String model) async {

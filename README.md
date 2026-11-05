@@ -23,6 +23,15 @@ flutter build linux           # build release in build/linux/x64/release/bundle/
 flutter test                  # test
 ```
 
+**Installazione sul PC.** Su desktop `flutter install` non fa nulla: per Flutter l'app si avvia dalla cartella di build. Per installarla nel menu delle applicazioni, con l'icona e il comando `traincal`, senza sudo:
+
+```bash
+tool/install_linux.sh            # installa o aggiorna (ricompila la release)
+tool/install_linux.sh --remove   # disinstalla (i dati restano)
+```
+
+L'app finisce in `~/.local/opt/traincal`. Dopo ogni modifica al codice, rilancia lo script per aggiornare la versione installata.
+
 Le chiavi API sono salvate nel portachiavi di sistema (libsecret: serve gnome-keyring o KWallet attivo). Se non è disponibile, l'app ripiega sul database locale e lo segnala.
 
 Il database locale è in `~/.local/share/it.traincal.traincal/traincal.db`.

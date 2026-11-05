@@ -13,7 +13,19 @@ class Collections {
   static const prefs = 'prefs';
   static const workoutCache = 'workout_cache';
 
-  static const synced = {profile, plans, foods, recipes, mealPlans, prefs};
+  /// Credenziali dei servizi (API key di intervals.icu), così basta
+  /// impostarle su un dispositivo. Protette dalle regole RLS di Supabase.
+  static const credentials = 'credentials';
+
+  static const synced = {
+    profile,
+    plans,
+    foods,
+    recipes,
+    mealPlans,
+    prefs,
+    credentials,
+  };
 }
 
 class StoredRecord {

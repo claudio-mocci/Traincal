@@ -61,6 +61,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final user = s.cloud.user;
+    // La chiave può arrivare dalla sincronizzazione con la schermata aperta.
+    final syncedKey = s.secrets[Secrets.intervalsApiKey] ?? '';
+    if (_icuKey.text.isEmpty && syncedKey.isNotEmpty) {
+      _icuKey.text = syncedKey;
+      _icuAthlete.text = s.secrets[Secrets.intervalsAthleteId] ?? '0';
+    }
     Widget secret(TextEditingController c, String label, {String? help}) =>
         TextField(
           controller: c,
@@ -98,6 +104,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               labelText: 'ID atleta',
               helperText: '"0" = il proprietario della API key; es. i12345',
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                user != null
+                    ? Icons.cloud_done_rounded
+                    : Icons.cloud_off_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  user != null
+                      ? 'La chiave si sincronizza sugli altri dispositivi '
+                            'collegati al tuo account.'
+                      : 'Accedi alla sincronizzazione (sotto) per non doverla '
+                            'inserire su ogni dispositivo.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Wrap(

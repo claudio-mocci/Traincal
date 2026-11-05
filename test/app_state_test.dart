@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:traincal/data/local_store.dart';
+import 'package:traincal/data/secrets.dart';
 import 'package:traincal/models/meal_plan.dart';
 import 'package:traincal/models/recipe.dart';
 import 'package:traincal/state/app_state.dart';
@@ -73,5 +74,60 @@ void main() {
         .expand((d) => d.meals)
         .map((m) => m.recipeId);
     expect(used, contains(id));
+  });
+
+  group('API key di intervals.icu sincronizzata', () {
+    test('salvata in locale e nel record sincronizzato', () async {
+      final s = await newState();
+      await s.saveIntervalsSettings('chiave-1', 'i123');
+      expect(s.secrets[Secrets.intervalsApiKey], 'chiave-1');
+      final rec = s.store.get(Collections.credentials, 'intervals')!;
+      expect(rec, {'apiKey': 'chiave-1', 'athleteId': 'i123'});
+      expect(
+        s.store.dirtyRecords().map((r) => r.collection),
+        contains(Collections.credentials),
+      );
+    });
+
+    test('arriva da un altro dispositivo e viene applicata', () async {
+      final s = await newState();
+      expect(s.intervalsConfigured, isFalse);
+      s.store.applyRemote(
+        StoredRecord(
+          Collections.credentials,
+          'intervals',
+          {'apiKey': 'dal-pc', 'athleteId': '0'},
+          DateTime.now().millisecondsSinceEpoch,
+          false,
+        ),
+      );
+      expect(await s.applySyncedCredentials(), isFalse);
+      expect(s.secrets[Secrets.intervalsApiKey], 'dal-pc');
+      expect(s.intervalsConfigured, isTrue);
+
+      // Rimossa altrove: sparisce anche qui.
+      s.store.applyRemote(
+        StoredRecord(
+          Collections.credentials,
+          'intervals',
+          {'apiKey': '', 'athleteId': '0'},
+          DateTime.now().millisecondsSinceEpoch + 1,
+          false,
+        ),
+      );
+      await s.applySyncedCredentials();
+      expect(s.intervalsConfigured, isFalse);
+    });
+
+    test('una chiave già presente viene caricata se manca il record', () async {
+      final s = await newState();
+      await s.secrets.set(Secrets.intervalsApiKey, 'vecchia');
+      expect(await s.applySyncedCredentials(), isTrue);
+      expect(
+        s.store.get(Collections.credentials, 'intervals')!['apiKey'],
+        'vecchia',
+      );
+      expect(await s.applySyncedCredentials(), isFalse);
+    });
   });
 }
