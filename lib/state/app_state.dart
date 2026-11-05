@@ -739,6 +739,20 @@ class AppState extends ChangeNotifier {
         excludedRecipeIds: mealPrepPrefs.excludedRecipeIds,
         pinnedRecipeIds: mealPrepPrefs.pinnedRecipeIds,
         freeMeals: freeMealsFor(selectedWeek),
+        removedMeals: removedMealsFor(selectedWeek),
+        lockedDays: {
+          for (final (i, d) in (weekMealPlan?.days ?? const []).indexed)
+            if (d.locked) i: d,
+        },
+        lockedMeals: {
+          for (final (i, d) in (weekMealPlan?.days ?? const []).indexed)
+            if (!d.locked && d.meals.any((m) => m.recipeLocked))
+              i: [
+                for (final m in d.meals)
+                  if (m.recipeLocked) m,
+              ],
+        },
+        previous: weekMealPlan,
         seed: seed ?? DateTime.now().millisecondsSinceEpoch,
       ),
     );
@@ -748,16 +762,17 @@ class AppState extends ChangeNotifier {
     _changed();
   }
 
-  // --- Pasti liberi -------------------------------------------------------
+  // --- Pasti liberi, eliminati e giorni bloccati ---------------------------
 
+  // Preferenze per settimana: { "2026-11-02": ["4:lunch", "4:dinner"] }.
   static const _freeMealsId = 'freemeals';
+  static const _removedMealsId = 'removedmeals';
 
   static String _weekId(DateTime week) =>
       mondayOf(week).toIso8601String().substring(0, 10);
 
-  /// Pasti liberi della settimana: indice del giorno (0 = lunedì) → pasti.
-  Map<int, Set<MealSlot>> freeMealsFor(DateTime week) {
-    final all = store.get(Collections.prefs, _freeMealsId) ?? const {};
+  Map<int, Set<MealSlot>> _slotsFor(String prefId, DateTime week) {
+    final all = store.get(Collections.prefs, prefId) ?? const {};
     final list = (all[_weekId(week)] as List?) ?? const [];
     final out = <int, Set<MealSlot>>{};
     for (final e in list.cast<String>()) {
@@ -768,51 +783,134 @@ class AppState extends ChangeNotifier {
     return out;
   }
 
-  /// Segna (o toglie) pasti liberi per la settimana selezionata. Vale per la
-  /// prossima generazione del menu.
-  void setFreeMeals(int day, Iterable<MealSlot> slots, bool free) {
-    final all = {...?store.get(Collections.prefs, _freeMealsId)};
+  void _setSlots(String prefId, int day, Iterable<MealSlot> slots, bool on) {
+    final all = {...?store.get(Collections.prefs, prefId)};
     final id = _weekId(selectedWeek);
     final set = {...((all[id] as List?) ?? const []).cast<String>()};
     for (final slot in slots) {
       final key = '$day:${slot.name}';
-      free ? set.add(key) : set.remove(key);
+      on ? set.add(key) : set.remove(key);
     }
     if (set.isEmpty) {
       all.remove(id);
     } else {
       all[id] = (set.toList()..sort());
     }
-    store.put(Collections.prefs, _freeMealsId, all);
+    store.put(Collections.prefs, prefId, all);
+  }
+
+  /// Pasti liberi della settimana: indice del giorno (0 = lunedì) → pasti.
+  Map<int, Set<MealSlot>> freeMealsFor(DateTime week) =>
+      _slotsFor(_freeMealsId, week);
+
+  /// Pasti eliminati della settimana: indice del giorno → pasti.
+  Map<int, Set<MealSlot>> removedMealsFor(DateTime week) =>
+      _slotsFor(_removedMealsId, week);
+
+  MealStatus mealStatus(int day, MealSlot slot) {
+    if (freeMealsFor(selectedWeek)[day]?.contains(slot) ?? false) {
+      return MealStatus.free;
+    }
+    if (removedMealsFor(selectedWeek)[day]?.contains(slot) ?? false) {
+      return MealStatus.removed;
+    }
+    return MealStatus.planned;
+  }
+
+  /// Imposta lo stato dei pasti di un giorno della settimana selezionata.
+  /// La scelta vale per le prossime generazioni e, se il menu esiste già,
+  /// si applica subito: un pasto libero o eliminato sparisce (gli eliminati
+  /// ridistribuiscono le calorie), uno ripristinato riceve una ricetta.
+  void setMealStatus(int day, Iterable<MealSlot> slots, MealStatus status) {
+    _setSlots(_freeMealsId, day, slots, status == MealStatus.free);
+    _setSlots(_removedMealsId, day, slots, status == MealStatus.removed);
+    final plan = weekMealPlan;
+    if (plan != null && day < plan.days.length) {
+      final days = [...plan.days];
+      var d = days[day];
+      for (final slot in slots) {
+        d = _applyStatus(plan, d, slot, status);
+      }
+      days[day] = planner.rebalanceDay(d);
+      _savePlanDays(plan, days);
+    }
     _changed();
   }
 
-  /// Rende libero un pasto del menu già generato: sparisce dalla
-  /// preparazione e dalla spesa, gli altri pasti del giorno non cambiano
-  /// quota. La scelta resta anche per le prossime rigenerazioni.
-  void makeMealFree(DateTime date, MealSlot slot) {
-    final plan = weekMealPlan;
-    if (plan == null) return;
-    final p = planner;
-    final days = [
-      for (final d in plan.days)
-        if (d.date != date)
-          d
-        else
-          p.rebalanceDay(
-            DayMealPlan(
-              date: d.date,
-              target: d.target,
-              meals: [
-                for (final m in d.meals)
-                  if (m.slot != slot) m,
-              ],
-              freeSlots: [...d.freeSlots, slot],
-            ),
-          ),
+  DayMealPlan _applyStatus(
+    WeekMealPlan plan,
+    DayMealPlan d,
+    MealSlot slot,
+    MealStatus status,
+  ) {
+    final free = [...d.freeSlots]..remove(slot);
+    final removed = [...d.removedSlots]..remove(slot);
+    var meals = [
+      for (final m in d.meals)
+        if (m.slot != slot) m,
     ];
-    final index = plan.days.indexWhere((d) => d.date == date);
-    if (index >= 0) setFreeMeals(index, [slot], true);
+    switch (status) {
+      case MealStatus.free:
+        free.add(slot);
+      case MealStatus.removed:
+        removed.add(slot);
+      case MealStatus.planned:
+        final existing = d.meals.where((m) => m.slot == slot).firstOrNull;
+        final recipeId = existing?.recipeId ?? _restoreRecipe(plan, d, slot);
+        if (recipeId != null) meals = [...meals, MealEntry(slot, recipeId, 1)];
+    }
+    int order(MealSlot s) => s.index;
+    return d.copyWith(
+      meals: meals..sort((a, b) => order(a.slot).compareTo(order(b.slot))),
+      freeSlots: free..sort((a, b) => order(a).compareTo(order(b))),
+      removedSlots: removed..sort((a, b) => order(a).compareTo(order(b))),
+    );
+  }
+
+  /// Ricetta per un pasto ripristinato: quella dello stesso pasto nel giorno
+  /// più vicino (così la preparazione non cambia), altrimenti una dello
+  /// stesso tipo già nel menu, altrimenti la prima adatta del ricettario.
+  String? _restoreRecipe(WeekMealPlan plan, DayMealPlan day, MealSlot slot) {
+    final index = plan.days.indexOf(day);
+    final byDistance = [...plan.days.indexed]
+      ..sort((a, b) => (a.$1 - index).abs().compareTo((b.$1 - index).abs()));
+    for (final (_, d) in byDistance) {
+      final m = d.meals.where((m) => m.slot == slot).firstOrNull;
+      if (m != null) return m.recipeId;
+    }
+    final all = planRecipesById;
+    for (final m in plan.days.expand((d) => d.meals)) {
+      if (all[m.recipeId]?.type == slot.type) return m.recipeId;
+    }
+    final excluded = mealPrepPrefs.excludedRecipeIds;
+    return recipes
+        .where((r) => r.type == slot.type && !excluded.contains(r.id))
+        .firstOrNull
+        ?.id;
+  }
+
+  /// Blocca o sblocca un giorno del menu: i giorni bloccati restano identici
+  /// quando si rigenera.
+  /// Blocca o sblocca un singolo pasto: rigenerando mantiene la ricetta.
+  void setMealLocked(int day, MealSlot slot, bool locked) {
+    final plan = weekMealPlan;
+    if (plan == null || day >= plan.days.length) return;
+    final days = [...plan.days];
+    days[day] = days[day].copyWith(
+      meals: [
+        for (final m in days[day].meals)
+          m.slot == slot ? m.copyWith(recipeLocked: locked) : m,
+      ],
+    );
+    _savePlanDays(plan, days);
+    _changed();
+  }
+
+  void setDayLocked(int day, bool locked) {
+    final plan = weekMealPlan;
+    if (plan == null || day >= plan.days.length) return;
+    final days = [...plan.days];
+    days[day] = days[day].copyWith(locked: locked);
     _savePlanDays(plan, days);
     _changed();
   }
@@ -829,19 +927,13 @@ class AppState extends ChangeNotifier {
           d
         else
           p.rebalanceDay(
-            DayMealPlan(
-              date: d.date,
-              target: d.target,
-              extras: d.extras,
-              freeSlots: d.freeSlots,
+            d.copyWith(
               meals: [
                 for (final m in d.meals)
                   m.slot != slot
                       ? m
-                      : MealEntry(
-                          m.slot,
-                          m.recipeId,
-                          servings ?? m.servings,
+                      : m.copyWith(
+                          servings: servings ?? m.servings,
                           locked: servings != null,
                         ),
               ],
@@ -880,20 +972,15 @@ class AppState extends ChangeNotifier {
     double adj(double s) => ((s * ratio) / 0.25).round() * 0.25;
     final days = [
       for (final d in plan.days)
-        DayMealPlan(
-          date: d.date,
-          target: d.target,
-          extras: d.extras,
-          freeSlots: d.freeSlots,
+        d.copyWith(
           meals: [
             for (final m in d.meals)
               m.recipeId == fromId
-                  ? MealEntry(
-                      m.slot,
-                      toId,
-                      all[toId]!.fixedServings ??
+                  ? m.copyWith(
+                      recipeId: toId,
+                      servings:
+                          all[toId]!.fixedServings ??
                           adj(m.servings).clamp(0.5, 3).toDouble(),
-                      locked: m.locked,
                     )
                   : m,
           ],

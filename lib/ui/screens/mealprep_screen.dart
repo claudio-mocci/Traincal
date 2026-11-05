@@ -113,6 +113,7 @@ class _PlanHeader extends StatelessWidget {
         .freeMealsFor(s.selectedWeek)
         .values
         .fold<int>(0, (a, v) => a + v.length);
+    final lockedCount = s.weekMealPlan?.days.where((d) => d.locked).length ?? 0;
     final summary = [
       p.style.shortLabel,
       '${p.prepSessions} ${p.prepSessions == 1 ? 'sessione' : 'sessioni'}',
@@ -120,6 +121,8 @@ class _PlanHeader extends StatelessWidget {
       if (p.pinnedRecipeIds.isNotEmpty) '${p.pinnedRecipeIds.length} fisse',
       if (freeCount > 0)
         '$freeCount ${freeCount == 1 ? 'pasto libero' : 'pasti liberi'}',
+      if (lockedCount > 0)
+        '$lockedCount ${lockedCount == 1 ? 'giorno bloccato' : 'giorni bloccati'}',
     ].join(' · ');
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
@@ -331,9 +334,11 @@ class _OptionsSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text('Pasti da preparare', style: theme.textTheme.labelLarge),
             Text(
-              'Togli la spunta ai pasti liberi (es. cena fuori): non avranno '
-              'ricetta, preparazione né spesa, ma la loro quota di calorie '
-              'resta riservata.',
+              'Tocca un pasto per cambiarne lo stato. Libero (es. cena fuori): '
+              'niente ricetta, preparazione né spesa, ma le sue calorie restano '
+              'riservate. Eliminato (es. lo spuntino nei giorni di riposo): le '
+              'sue calorie passano agli altri pasti. Le modifiche valgono '
+              'subito anche per il menu attuale.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -371,8 +376,46 @@ class _FreeMealsGrid extends StatelessWidget {
     final slots = MealSlot.values
         .where(MealPlanner.slotShares(s.profile.mealsPerDay).containsKey)
         .toList();
-    final free = s.freeMealsFor(s.selectedWeek);
     final days = s.weekDays;
+    final c = context.colors;
+
+    // Preparato → libero → eliminato → preparato.
+    MealStatus next(MealStatus st) =>
+        MealStatus.values[(st.index + 1) % MealStatus.values.length];
+    Widget cell(int d, MealSlot slot) {
+      final st = s.mealStatus(d, slot);
+      final (icon, color, tip) = switch (st) {
+        MealStatus.planned => (
+          Icons.check_box_rounded,
+          theme.colorScheme.primary,
+          'Preparato',
+        ),
+        MealStatus.free => (
+          Icons.no_meals_rounded,
+          c.carbs,
+          'Libero (calorie riservate)',
+        ),
+        MealStatus.removed => (
+          Icons.disabled_by_default_outlined,
+          theme.colorScheme.onSurfaceVariant,
+          'Eliminato (calorie ridistribuite)',
+        ),
+      };
+      return IconButton(
+        tooltip: '${slot.label}: $tip',
+        icon: Icon(icon, color: color),
+        onPressed: () => s.setMealStatus(d, [slot], next(st)),
+      );
+    }
+
+    Widget legend(IconData icon, Color color, String text) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(text, style: theme.textTheme.labelSmall),
+      ],
+    );
 
     return Column(
       children: [
@@ -402,11 +445,16 @@ class _FreeMealsGrid extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     alignment: Alignment.centerLeft,
                   ),
+                  // Giorno intero: tutto libero ↔ tutto preparato.
                   onPressed: () {
                     final allFree = slots.every(
-                      (slot) => free[d]?.contains(slot) ?? false,
+                      (slot) => s.mealStatus(d, slot) == MealStatus.free,
                     );
-                    s.setFreeMeals(d, slots, !allFree);
+                    s.setMealStatus(
+                      d,
+                      slots,
+                      allFree ? MealStatus.planned : MealStatus.free,
+                    );
                   },
                   child: Text(
                     dayFmt.format(days[d]).split(' ').take(2).join(' '),
@@ -414,15 +462,27 @@ class _FreeMealsGrid extends StatelessWidget {
                   ),
                 ),
               ),
-              for (final slot in slots)
-                Expanded(
-                  child: Checkbox(
-                    value: !(free[d]?.contains(slot) ?? false),
-                    onChanged: (v) => s.setFreeMeals(d, [slot], v == false),
-                  ),
-                ),
+              for (final slot in slots) Expanded(child: cell(d, slot)),
             ],
           ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 14,
+          runSpacing: 4,
+          children: [
+            legend(
+              Icons.check_box_rounded,
+              theme.colorScheme.primary,
+              'preparato',
+            ),
+            legend(Icons.no_meals_rounded, c.carbs, 'libero'),
+            legend(
+              Icons.disabled_by_default_outlined,
+              theme.colorScheme.onSurfaceVariant,
+              'eliminato',
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -502,7 +562,7 @@ class _MenuTabState extends State<_MenuTab> {
     final d = plan.days[_day.clamp(0, plan.days.length - 1)];
     final total = planner.dayTotal(d);
     final planned = MealPlanner.plannedTarget(d);
-    final shares = MealPlanner.slotShares(d.meals.length + d.freeSlots.length);
+    final shares = MealPlanner.slotShares(d.slotCount);
     final shareSum = shares.values.fold<double>(0, (a, b) => a + b);
     double freeKcal(MealSlot slot) =>
         shareSum == 0 ? 0 : d.target.kcal * (shares[slot] ?? 0) / shareSum;
@@ -514,9 +574,12 @@ class _MenuTabState extends State<_MenuTab> {
         DayStrip(
           days: [for (final x in plan.days) x.date],
           selected: _day,
+          marked: (i) => plan.days[i].locked,
           onSelected: (i) => setState(() => _day = i),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
+        _LockRow(locked: d.locked, onChanged: (v) => s.setDayLocked(_day, v)),
+        const SizedBox(height: 10),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -585,8 +648,19 @@ class _MenuTabState extends State<_MenuTab> {
         for (final slot in MealSlot.values)
           if (d.freeSlots.contains(slot)) ...[
             _slotHeader(context, slot, '~${freeKcal(slot).round()} kcal'),
-            _FreeMealCard(kcal: freeKcal(slot)),
-          ] else if (mealBySlot[slot] case final m?)
+            _FreeMealCard(
+              kcal: freeKcal(slot),
+              onRestore: () =>
+                  s.setMealStatus(_day, [slot], MealStatus.planned),
+              onRemove: () => s.setMealStatus(_day, [slot], MealStatus.removed),
+            ),
+          ] else if (d.removedSlots.contains(slot))
+            _RemovedMealRow(
+              slot: slot,
+              onRestore: () =>
+                  s.setMealStatus(_day, [slot], MealStatus.planned),
+            )
+          else if (mealBySlot[slot] case final m?)
             if (recipes[m.recipeId] case final r?) ...[
               _slotHeader(
                 context,
@@ -602,7 +676,12 @@ class _MenuTabState extends State<_MenuTab> {
                       _ServingsDialog(date: d.date, meal: m, recipe: r),
                 ),
                 onSwap: () => _swap(context, r),
-                onFree: () => s.makeMealFree(d.date, slot),
+                dayLocked: d.locked,
+                onToggleLock: () =>
+                    s.setMealLocked(_day, slot, !m.recipeLocked),
+                onFree: () => s.setMealStatus(_day, [slot], MealStatus.free),
+                onRemove: () =>
+                    s.setMealStatus(_day, [slot], MealStatus.removed),
               ),
             ],
         if (d.extras.isNotEmpty) ...[
@@ -670,51 +749,161 @@ class _MenuTabState extends State<_MenuTab> {
 /// Pasto fuori dal meal prep: mostra quante kcal restano a disposizione.
 class _FreeMealCard extends StatelessWidget {
   final double kcal;
-  const _FreeMealCard({required this.kcal});
+  final VoidCallback onRestore;
+  final VoidCallback onRemove;
+  const _FreeMealCard({
+    required this.kcal,
+    required this.onRestore,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = context.colors;
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: theme.colorScheme.outlineVariant),
         color: c.subtle,
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              Icons.no_meals_rounded,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(Icons.no_meals_rounded, color: c.carbs),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pasto libero', style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Fuori dal meal prep: hai circa ${kcal.round()} kcal a '
+                      'disposizione.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Align(
+            alignment: Alignment.centerRight,
+            child: Wrap(
+              spacing: 4,
               children: [
-                Text('Pasto libero', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 2),
-                Text(
-                  'Fuori dal meal prep: hai circa ${kcal.round()} kcal a '
-                  'disposizione. Per ripianificarlo usa le Opzioni del menu.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                TextButton.icon(
+                  icon: const Icon(
+                    Icons.disabled_by_default_outlined,
+                    size: 18,
                   ),
+                  label: const Text('Elimina'),
+                  onPressed: onRemove,
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.restaurant_rounded, size: 18),
+                  label: const Text('Ripristina'),
+                  onPressed: onRestore,
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Pasto eliminato: una riga discreta con la possibilità di ripristinarlo.
+class _RemovedMealRow extends StatelessWidget {
+  final MealSlot slot;
+  final VoidCallback onRestore;
+  const _RemovedMealRow({required this.slot, required this.onRestore});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.disabled_by_default_outlined,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '${slot.label} eliminato: calorie ridistribuite sugli altri pasti',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          TextButton(onPressed: onRestore, child: const Text('Ripristina')),
+        ],
+      ),
+    );
+  }
+}
+
+/// Interruttore per bloccare il giorno: la rigenerazione non lo tocca.
+class _LockRow extends StatelessWidget {
+  final bool locked;
+  final ValueChanged<bool> onChanged;
+  const _LockRow({required this.locked, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = locked
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    return Material(
+      color: locked
+          ? theme.colorScheme.primary.withValues(alpha: 0.10)
+          : context.colors.subtle,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => onChanged(!locked),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              Icon(
+                locked ? Icons.lock_rounded : Icons.lock_open_rounded,
+                size: 20,
+                color: color,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  locked
+                      ? 'Giorno bloccato: "Rigenera" non lo modifica'
+                      : 'Blocca il giorno (o un singolo pasto dal menu ⋮) per '
+                            'mantenerlo quando rigeneri',
+                  style: theme.textTheme.bodySmall?.copyWith(color: color),
+                ),
+              ),
+              Switch(value: locked, onChanged: onChanged),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -726,6 +915,11 @@ class _MealCard extends StatelessWidget {
   final VoidCallback onServings;
   final VoidCallback onSwap;
   final VoidCallback onFree;
+  final VoidCallback onRemove;
+  final VoidCallback onToggleLock;
+
+  /// Giorno bloccato: il pasto è bloccato con lui.
+  final bool dayLocked;
 
   const _MealCard({
     required this.meal,
@@ -733,6 +927,9 @@ class _MealCard extends StatelessWidget {
     required this.onServings,
     required this.onSwap,
     required this.onFree,
+    required this.onRemove,
+    required this.onToggleLock,
+    required this.dayLocked,
   });
 
   @override
@@ -742,6 +939,7 @@ class _MealCard extends StatelessWidget {
     final c = context.colors;
     final m = recipe.macrosPerServing(s.foods).scale(meal.servings);
     final fixed = meal.locked || recipe.fixedServings != null;
+    final kept = meal.recipeLocked || dayLocked;
     return Card(
       child: InkWell(
         onTap: () => showRecipeDetail(context, recipe),
@@ -766,10 +964,19 @@ class _MealCard extends StatelessWidget {
                       spacing: 6,
                       runSpacing: 4,
                       children: [
+                        if (kept)
+                          InfoPill(
+                            dayLocked ? 'Giorno bloccato' : 'Bloccato',
+                            icon: Icons.lock_rounded,
+                            color: theme.colorScheme.primary,
+                            background: theme.colorScheme.primary.withValues(
+                              alpha: 0.12,
+                            ),
+                          ),
                         InfoPill(
                           '${fmtServings(meal.servings)} porz.',
                           icon: fixed
-                              ? Icons.lock_rounded
+                              ? Icons.edit_rounded
                               : Icons.restaurant_rounded,
                           color: fixed ? theme.colorScheme.primary : null,
                         ),
@@ -800,7 +1007,8 @@ class _MealCard extends StatelessWidget {
                     tooltip: 'Porzioni',
                     visualDensity: VisualDensity.compact,
                     icon: Icon(
-                      fixed ? Icons.lock_outline_rounded : Icons.tune_rounded,
+                      Icons.tune_rounded,
+                      color: fixed ? theme.colorScheme.primary : null,
                     ),
                     onPressed: onServings,
                   ),
@@ -809,6 +1017,25 @@ class _MealCard extends StatelessWidget {
                     icon: const Icon(Icons.more_vert_rounded),
                     onSelected: (action) => action(),
                     itemBuilder: (_) => [
+                      if (!dayLocked)
+                        PopupMenuItem(
+                          value: onToggleLock,
+                          child: ListTile(
+                            leading: Icon(
+                              meal.recipeLocked
+                                  ? Icons.lock_open_rounded
+                                  : Icons.lock_rounded,
+                            ),
+                            title: Text(
+                              meal.recipeLocked
+                                  ? 'Sblocca pasto'
+                                  : 'Blocca pasto',
+                            ),
+                            subtitle: const Text(
+                              'Rigenerando mantiene la ricetta',
+                            ),
+                          ),
+                        ),
                       PopupMenuItem(
                         value: onSwap,
                         child: const ListTile(
@@ -821,6 +1048,15 @@ class _MealCard extends StatelessWidget {
                         child: const ListTile(
                           leading: Icon(Icons.no_meals_rounded),
                           title: Text('Rendi pasto libero'),
+                          subtitle: Text('Le calorie restano riservate'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: onRemove,
+                        child: const ListTile(
+                          leading: Icon(Icons.disabled_by_default_outlined),
+                          title: Text('Elimina pasto'),
+                          subtitle: Text('Calorie ridistribuite sugli altri'),
                         ),
                       ),
                     ],

@@ -12,18 +12,36 @@ class MealEntry {
   /// tocca.
   final bool locked;
 
+  /// Pasto bloccato: rigenerando il menu mantiene la sua ricetta.
+  final bool recipeLocked;
+
   const MealEntry(
     this.slot,
     this.recipeId,
     this.servings, {
     this.locked = false,
+    this.recipeLocked = false,
   });
+
+  MealEntry copyWith({
+    String? recipeId,
+    double? servings,
+    bool? locked,
+    bool? recipeLocked,
+  }) => MealEntry(
+    slot,
+    recipeId ?? this.recipeId,
+    servings ?? this.servings,
+    locked: locked ?? this.locked,
+    recipeLocked: recipeLocked ?? this.recipeLocked,
+  );
 
   Map<String, dynamic> toJson() => {
     'slot': slot.name,
     'recipeId': recipeId,
     'servings': servings,
     if (locked) 'locked': true,
+    if (recipeLocked) 'recipeLocked': true,
   };
 
   factory MealEntry.fromJson(Map<String, dynamic> j) => MealEntry(
@@ -31,6 +49,7 @@ class MealEntry {
     j['recipeId'] as String,
     (j['servings'] as num).toDouble(),
     locked: j['locked'] as bool? ?? false,
+    recipeLocked: j['recipeLocked'] as bool? ?? false,
   );
 }
 
@@ -47,6 +66,18 @@ class ExtraFood {
       ExtraFood(j['foodId'] as String, (j['grams'] as num).toDouble());
 }
 
+/// Stato di un pasto nella pianificazione della settimana.
+enum MealStatus {
+  /// Preparato con il meal prep.
+  planned,
+
+  /// Fuori dal meal prep (es. cena fuori): tiene la sua quota di calorie.
+  free,
+
+  /// Eliminato: la sua quota si ridistribuisce sugli altri pasti del giorno.
+  removed,
+}
+
 class DayMealPlan {
   final DateTime date;
 
@@ -59,13 +90,47 @@ class DayMealPlan {
   /// fabbisogno, ma senza ricetta, preparazione né spesa.
   final List<MealSlot> freeSlots;
 
+  /// Pasti eliminati: la loro quota passa agli altri pasti del giorno.
+  final List<MealSlot> removedSlots;
+
+  /// Giorno bloccato: la rigenerazione del menu non lo modifica.
+  final bool locked;
+
   const DayMealPlan({
     required this.date,
     required this.target,
     required this.meals,
     this.extras = const [],
     this.freeSlots = const [],
+    this.removedSlots = const [],
+    this.locked = false,
   });
+
+  /// Numero di pasti della giornata, contando liberi ed eliminati.
+  int get slotCount => meals.length + freeSlots.length + removedSlots.length;
+
+  MealStatus statusOf(MealSlot slot) => freeSlots.contains(slot)
+      ? MealStatus.free
+      : removedSlots.contains(slot)
+      ? MealStatus.removed
+      : MealStatus.planned;
+
+  DayMealPlan copyWith({
+    Macros? target,
+    List<MealEntry>? meals,
+    List<ExtraFood>? extras,
+    List<MealSlot>? freeSlots,
+    List<MealSlot>? removedSlots,
+    bool? locked,
+  }) => DayMealPlan(
+    date: date,
+    target: target ?? this.target,
+    meals: meals ?? this.meals,
+    extras: extras ?? this.extras,
+    freeSlots: freeSlots ?? this.freeSlots,
+    removedSlots: removedSlots ?? this.removedSlots,
+    locked: locked ?? this.locked,
+  );
 
   Map<String, dynamic> toJson() => {
     'date': date.toIso8601String(),
@@ -74,21 +139,29 @@ class DayMealPlan {
     'extras': extras.map((e) => e.toJson()).toList(),
     if (freeSlots.isNotEmpty)
       'freeSlots': freeSlots.map((s) => s.name).toList(),
+    if (removedSlots.isNotEmpty)
+      'removedSlots': removedSlots.map((s) => s.name).toList(),
+    if (locked) 'locked': true,
   };
 
-  factory DayMealPlan.fromJson(Map<String, dynamic> j) => DayMealPlan(
-    date: DateTime.parse(j['date'] as String),
-    target: Macros.fromJson(j['target'] as Map<String, dynamic>),
-    meals: (j['meals'] as List)
-        .map((e) => MealEntry.fromJson(e as Map<String, dynamic>))
-        .toList(),
-    extras: (j['extras'] as List? ?? const [])
-        .map((e) => ExtraFood.fromJson(e as Map<String, dynamic>))
-        .toList(),
-    freeSlots: ((j['freeSlots'] as List?) ?? const [])
+  factory DayMealPlan.fromJson(Map<String, dynamic> j) {
+    List<MealSlot> slots(String key) => ((j[key] as List?) ?? const [])
         .map((s) => MealSlot.values.byName(s as String))
-        .toList(),
-  );
+        .toList();
+    return DayMealPlan(
+      date: DateTime.parse(j['date'] as String),
+      target: Macros.fromJson(j['target'] as Map<String, dynamic>),
+      meals: (j['meals'] as List)
+          .map((e) => MealEntry.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      extras: (j['extras'] as List? ?? const [])
+          .map((e) => ExtraFood.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      freeSlots: slots('freeSlots'),
+      removedSlots: slots('removedSlots'),
+      locked: j['locked'] as bool? ?? false,
+    );
+  }
 }
 
 /// Una sessione di cucina: si prepara una ricetta per più giorni.

@@ -26,6 +26,21 @@ class MealPlanOptions {
   /// Pasti liberi per giorno (indice nella settimana): niente ricetta, ma la
   /// loro quota di fabbisogno resta riservata.
   final Map<int, Set<MealSlot>> freeMeals;
+
+  /// Pasti eliminati per giorno: la loro quota passa agli altri pasti.
+  final Map<int, Set<MealSlot>> removedMeals;
+
+  /// Giorni bloccati (indice → giornata del piano precedente): restano
+  /// identici, il generatore riempie solo gli altri.
+  final Map<int, DayMealPlan> lockedDays;
+
+  /// Pasti bloccati nei giorni non bloccati (indice → pasti): mantengono la
+  /// ricetta (e le porzioni, se impostate a mano), gli altri si rigenerano.
+  final Map<int, List<MealEntry>> lockedMeals;
+
+  /// Piano precedente, per conservare le ricette generate (combinazioni e
+  /// componenti) usate dai giorni bloccati.
+  final WeekMealPlan? previous;
   final int seed;
 
   /// Peso della stagionalità nella scelta delle ricette: 0 la ignora, 0.6
@@ -41,6 +56,10 @@ class MealPlanOptions {
     this.excludedRecipeIds = const {},
     this.pinnedRecipeIds = const {},
     this.freeMeals = const {},
+    this.removedMeals = const {},
+    this.lockedDays = const {},
+    this.lockedMeals = const {},
+    this.previous,
     this.seed = 0,
     this.seasonWeight = 0.6,
   });
@@ -138,6 +157,16 @@ class MealPlanner {
     final shares = slotShares(mealsPerDay);
     bool isFree(int day, MealSlot slot) =>
         options.freeMeals[day]?.contains(slot) ?? false;
+    bool isRemoved(int day, MealSlot slot) =>
+        options.removedMeals[day]?.contains(slot) ?? false;
+    // Pasti che il generatore non deve riempire.
+    MealEntry? lockedMeal(int day, MealSlot slot) =>
+        options.lockedMeals[day]?.where((m) => m.slot == slot).firstOrNull;
+    bool skip(int day, MealSlot slot) =>
+        options.lockedDays.containsKey(day) ||
+        lockedMeal(day, slot) != null ||
+        isFree(day, slot) ||
+        isRemoved(day, slot);
     final available = recipes
         .where((r) => !options.excludedRecipeIds.contains(r.id))
         .where((r) => _perServing(r).kcal > 50)
@@ -216,7 +245,7 @@ class MealPlanner {
       final meals = [
         for (final d in block)
           for (final slot in mainSlots)
-            if (!isFree(d, slot)) (day: d - block.first, slot: slot),
+            if (!skip(d, slot)) (day: d - block.first, slot: slot),
       ];
       // Blocco tutto libero: niente da cucinare.
       if (meals.isEmpty) continue;
@@ -344,7 +373,7 @@ class MealPlanner {
       }
       for (var d = 0; d < days.length; d++) {
         for (var s = 0; s < slots.length; s++) {
-          if (isFree(d, slots[s])) continue;
+          if (skip(d, slots[s])) continue;
           assignments[d][slots[s]] = chosen[(d + s) % chosen.length];
         }
       }
@@ -353,9 +382,40 @@ class MealPlanner {
     rotate(MealType.breakfast, options.breakfastVariety);
     rotate(MealType.snack, options.snackVariety);
 
+    // Giorni e pasti bloccati: conservano le ricette generate (combinazioni
+    // e componenti) del piano precedente.
+    final prevRecipes = {
+      for (final r in options.previous?.generatedRecipes ?? const <Recipe>[])
+        r.id: r,
+    };
+    for (final m in [
+      ...options.lockedDays.values.expand((d) => d.meals),
+      ...options.lockedMeals.values.expand((l) => l),
+    ]) {
+      final ids = [m.recipeId, ...?options.previous?.combos[m.recipeId]];
+      for (final id in ids) {
+        if (prevRecipes[id] case final r?) generated.putIfAbsent(id, () => r);
+      }
+      if (options.previous?.combos[m.recipeId] case final c?) {
+        combos[m.recipeId] = c;
+      }
+    }
+    _generated.addAll(generated);
+
+    // Pasti bloccati: la loro ricetta resta al suo posto.
+    options.lockedMeals.forEach((d, meals) {
+      for (final m in meals) {
+        if (_lookup(m.recipeId) case final r?) assignments[d][m.slot] = r;
+      }
+    });
+
     // Porzioni scalate sul fabbisogno del giorno + integrazioni.
     final dayPlans = <DayMealPlan>[];
     for (var d = 0; d < days.length; d++) {
+      if (options.lockedDays[d] case final locked?) {
+        dayPlans.add(locked.copyWith(locked: true));
+        continue;
+      }
       dayPlans.add(
         _buildDay(
           days[d].date,
@@ -365,6 +425,18 @@ class MealPlanner {
           free: {
             for (final slot in shares.keys)
               if (isFree(d, slot)) slot,
+          },
+          removed: {
+            for (final slot in shares.keys)
+              if (isRemoved(d, slot)) slot,
+          },
+          locked: {
+            for (final m in options.lockedMeals[d] ?? const <MealEntry>[])
+              if (m.locked) m.slot: m.servings,
+          },
+          keep: {
+            for (final m in options.lockedMeals[d] ?? const <MealEntry>[])
+              m.slot,
           },
         ),
       );
@@ -598,17 +670,22 @@ class MealPlanner {
       day.date,
       day.target,
       assigned,
-      slotShares(day.meals.length + day.freeSlots.length),
+      slotShares(day.slotCount),
       locked: locked,
       free: day.freeSlots.toSet(),
-    );
+      removed: day.removedSlots.toSet(),
+      keep: {
+        for (final m in day.meals)
+          if (m.recipeLocked) m.slot,
+      },
+    ).copyWith(locked: day.locked);
   }
 
   /// Quota del fabbisogno del giorno coperta dal menu: il target meno la
   /// parte riservata ai pasti liberi.
   static Macros plannedTarget(DayMealPlan day) {
     if (day.freeSlots.isEmpty) return day.target;
-    final shares = slotShares(day.meals.length + day.freeSlots.length);
+    final shares = slotShares(day.slotCount);
     final all = shares.values.fold<double>(0, (a, b) => a + b);
     final free = day.freeSlots.fold<double>(0, (a, s) => a + (shares[s] ?? 0));
     return day.target.scale(all == 0 ? 0 : (all - free) / all);
@@ -621,6 +698,8 @@ class MealPlanner {
     Map<MealSlot, double> shares, {
     Map<MealSlot, double> locked = const {},
     Set<MealSlot> free = const {},
+    Set<MealSlot> removed = const {},
+    Set<MealSlot> keep = const {},
   }) {
     final dayTarget = target;
     // I pasti liberi tengono la loro quota: il menu copre solo il resto.
@@ -642,6 +721,10 @@ class MealPlanner {
       for (final slot in MealSlot.values)
         if (free.contains(slot)) slot,
     ];
+    final removedSlots = [
+      for (final slot in MealSlot.values)
+        if (removed.contains(slot)) slot,
+    ];
     // Giornata tutta libera: nessun pasto e nessuna integrazione.
     if (orderedSlots.isEmpty) {
       return DayMealPlan(
@@ -649,6 +732,7 @@ class MealPlanner {
         target: dayTarget,
         meals: const [],
         freeSlots: freeSlots,
+        removedSlots: removedSlots,
       );
     }
     final extras = <ExtraFood>[];
@@ -678,11 +762,22 @@ class MealPlanner {
           final r = assigned[slot]!;
           final f = fixed[slot];
           if (f != null) {
-            return MealEntry(slot, r.id, f, locked: locked.containsKey(slot));
+            return MealEntry(
+              slot,
+              r.id,
+              f,
+              locked: locked.containsKey(slot),
+              recipeLocked: keep.contains(slot),
+            );
           }
           final want = max(0.0, kcal - fixedKcal) * share(slot) / shareSum;
           final servings = _round(want / _perServing(r).kcal, 0.25);
-          return MealEntry(slot, r.id, servings.clamp(0.5, 3.0).toDouble());
+          return MealEntry(
+            slot,
+            r.id,
+            servings.clamp(0.5, 3.0).toDouble(),
+            recipeLocked: keep.contains(slot),
+          );
         }(),
     ];
 
@@ -739,6 +834,7 @@ class MealPlanner {
       meals: meals,
       extras: extras,
       freeSlots: freeSlots,
+      removedSlots: removedSlots,
     );
   }
 

@@ -72,6 +72,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(state.weekMealPlan, isNotNull);
       // Porzioni impostate a mano sul primo pasto del menu.
+      // Su schermi stretti la prima card può finire sotto la navigazione.
+      await tester.ensureVisible(find.byTooltip('Porzioni').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Porzioni').first);
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.add).last);
